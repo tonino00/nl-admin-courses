@@ -1,0 +1,303 @@
+{
+  "students": [
+    {
+      "id": 1,
+      "fullName": "João Silva",
+      "mothersName": "Maria Silva",
+      "cpf": "123.456.789-00",
+      "rg": "12.345.678-9",
+      "birthDate": "1995-05-15",
+      "address": {
+        "street": "Rua das Flores",
+        "number": "123",
+        "complement": "Apto 101",
+        "district": "Centro",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01001-000"
+      },
+      "phone": "(11) 98765-4321",
+      "email": "joao.silva@email.com",
+      "status": "active",
+      "documents": [
+        {
+          "id": 1,
+          "type": "photo",
+          "url": "https://randomuser.me/api/portraits/men/1.jpg"
+        }
+      ],
+      "enrollments": [
+        {
+          "id": 1,
+          "courseId": 1,
+          "enrollmentDate": "2023-02-01",
+          "status": "active"
+        }
+      ],
+      "grades": [
+        {
+          "courseId": 1,
+          "grades": [
+            {
+              "module": "Module 1",
+              "grade": 85
+            },
+            {
+              "module": "Module 2",
+              "grade": 92
+            }
+          ]
+        }
+      ],
+      "certificates": [
+        {
+          "id": 1,
+          "courseId": 2,
+          "issueDate": "2022-12-15",
+          "url": "certificates/joao-silva-course2.pdf"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "fullName": "Ana Costa",
+      "mothersName": "Carla Costa",
+      "cpf": "987.654.321-00",
+      "rg": "98.765.432-1",
+      "birthDate": "1998-10-20",
+      "address": {
+        "street": "Avenida Paulista",
+        "number": "1500",
+        "complement": "Sala 203",
+        "district": "Bela Vista",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01310-200"
+      },
+      "phone": "(11) 91234-5678",
+      "email": "ana.costa@email.com",
+      "status": "active",
+      "documents": [
+        {
+          "id": 2,
+          "type": "photo",
+          "url": "https://randomuser.me/api/portraits/women/1.jpg"
+        }
+      ],
+      "enrollments": [
+        {
+          "id": 2,
+          "courseId": 3,
+          "enrollmentDate": "2023-03-15",
+          "status": "active"
+        }
+      ],
+      "grades": [],
+      "certificates": []
+    }
+  ],
+  "teachers": [
+    {
+      "id": 2,
+      "fullName": "Fernanda Lima",
+      "cpf": "555.666.777-88",
+      "rg": "55.666.777-8",
+      "birthDate": "1985-03-22",
+      "address": {
+        "street": "Rua Oscar Freire",
+        "number": "800",
+        "complement": "Apto 52",
+        "district": "Jardins",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01426-001"
+      },
+      "phone": "(11) 95555-6666",
+      "email": "fernanda.lima@email.com",
+      "status": "active",
+      "specialization": [
+        "Basic",
+        "Intermediate"
+      ],
+      "documents": [
+        {
+          "id": 4,
+          "type": "photo",
+          "url": "https://randomuser.me/api/portraits/women/10.jpg"
+        }
+      ],
+      "assignedCourses": [
+        2
+      ]
+    },
+    {
+      "fullName": "Antonino Caetano Gama",
+      "cpf": "081.382.034-04",
+      "birthDate": "1990-07-25",
+      "address": {
+        "street": "R",
+        "number": "155",
+        "complement": "casa",
+        "district": "Vergel",
+        "city": "Maceió",
+        "state": "Al",
+        "zipCode": "57014-140"
+      },
+      "phone": "(00) 00000-0000",
+      "email": "antoninocgama@gmail.com",
+      "bio": "Ola",
+      "education": "Engenheiro de Software",
+      "specializations": [
+        "Programação"
+      ],
+      "status": "active",
+      "rg": "",
+      "documents": [],
+      "courses": [],
+      "id": 3
+    }
+  ],
+  "courses": [
+    {
+      "name": "Desenvolvimento Web Front-end",
+      "description": "Curso completo de desenvolvimento front-end com HTML, CSS e JavaScript",
+      "workload": 80,
+      "shifts": [
+        "morning",
+        "night"
+      ],
+      "totalSpots": 10,
+      "availableSpots": 5,
+      "prerequisites": [
+        2,
+        3
+      ],
+      "schedule": [
+        {
+          "day": "Monday",
+          "start": "09:00",
+          "end": "12:00"
+        },
+        {
+          "day": "Wednesday",
+          "start": "09:00",
+          "end": "12:00"
+        },
+        {
+          "day": "Monday",
+          "start": "19:00",
+          "end": "22:00"
+        },
+        {
+          "day": "Wednesday",
+          "start": "19:00",
+          "end": "22:00"
+        }
+      ],
+      "teacherId": 2,
+      "status": "active",
+      "id": 1
+    },
+    {
+      "id": 2,
+      "courseData": {
+        "schedule": [
+          {
+            "day": "Tuesday",
+            "start": "14:00",
+            "end": "17:00"
+          },
+          {
+            "day": "Thursday",
+            "start": "14:00",
+            "end": "17:00"
+          }
+        ],
+        "prerequisites": [],
+        "status": "active",
+        "teacherId": 2,
+        "totalSpots": 12,
+        "shifts": [
+          "afternoon"
+        ],
+        "workload": 60,
+        "description": "Fundamentos de bancos de dados SQL com PostgreSQL",
+        "name": "Banco de Dados Relacionais",
+        "availableSpots": 7
+      }
+    }
+  ],
+  "enrollments": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "courseId": 1,
+      "enrollmentDate": "2023-02-01",
+      "status": "active",
+      "attendance": [
+        {
+          "date": "2023-02-06",
+          "present": true
+        },
+        {
+          "date": "2023-02-08",
+          "present": true
+        },
+        {
+          "date": "2023-02-13",
+          "present": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "studentId": 2,
+      "courseId": 3,
+      "enrollmentDate": "2023-03-15",
+      "status": "active",
+      "attendance": [
+        {
+          "date": "2023-03-21",
+          "present": true
+        },
+        {
+          "date": "2023-03-23",
+          "present": true
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "admin123",
+      "name": "Administrador",
+      "role": "admin"
+    },
+    {
+      "id": 3,
+      "username": "teacher2",
+      "password": "teacher123",
+      "name": "Fernanda Lima",
+      "role": "teacher",
+      "teacherId": 2
+    },
+    {
+      "id": 4,
+      "username": "student1",
+      "password": "student123",
+      "name": "João Silva",
+      "role": "student",
+      "studentId": 1
+    },
+    {
+      "id": 5,
+      "username": "student2",
+      "password": "student123",
+      "name": "Ana Costa",
+      "role": "student",
+      "studentId": 2
+    }
+  ]
+}
