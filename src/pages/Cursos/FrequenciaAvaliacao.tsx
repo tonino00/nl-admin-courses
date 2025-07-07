@@ -52,6 +52,7 @@ import { RootState } from '../../store';
 import { CoursesState, EnrollmentsState, EnrollmentFull, StudentsState, Student } from '../../types';
 
 // Definindo interfaces locais
+
 interface AttendanceRecord {
   date: string;
   present: boolean;
@@ -85,7 +86,7 @@ interface TabPanelProps {
 }
 
 // Função para converter EnrollmentFull para ExtendedEnrollment
-function convertToExtendedEnrollment(enrollment: EnrollmentFull, student?: any): ExtendedEnrollment {
+function convertToExtendedEnrollment(enrollment: EnrollmentFull, student?: Student): ExtendedEnrollment {
   return {
     ...enrollment,
     student: {
@@ -125,6 +126,14 @@ interface AttendanceRecord {
 }
 
 const FrequenciaAvaliacao: React.FC = () => {
+  // Definindo interfaces locais para o componente
+  interface CourseModule {
+    id: number;
+    name: string;
+    description?: string;
+    order?: number;
+  }
+  
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const theme = useTheme();
@@ -156,7 +165,7 @@ const FrequenciaAvaliacao: React.FC = () => {
     const enrollmentsState = state.enrollments as EnrollmentsState;
     return enrollmentsState.enrollments.map(enrollment => {
       // Procurar aluno nos dados carregados
-      const student = students.find(s => s.id === enrollment.studentId);
+      const student = students.find((s: Student) => s.id === enrollment.studentId);
       console.log(`Matrícula: ${enrollment.id}, StudentId: ${enrollment.studentId}, Student encontrado:`, student);
       return convertToExtendedEnrollment(enrollment, student);
     }) as ExtendedEnrollment[];
@@ -189,9 +198,9 @@ const FrequenciaAvaliacao: React.FC = () => {
     if (id) {
       dispatch(fetchCourseById(Number(id)));
       dispatch(fetchEnrollmentsByCourse(Number(id)));
-      dispatch(fetchStudents()).unwrap().then(response => {
+      dispatch(fetchStudents()).unwrap().then((response: Student[]) => {
         console.log('Estudantes carregados:', response);
-      }).catch(err => {
+      }).catch((err: Error) => {
         console.error('Erro ao carregar estudantes:', err);
       });
     }
@@ -210,18 +219,18 @@ const FrequenciaAvaliacao: React.FC = () => {
       
       // Obter IDs únicos de estudantes de todas as matrículas
       const studentIdsSet = new Set<number>();
-      enrollmentsRaw.forEach(e => e.studentId && studentIdsSet.add(e.studentId));
+      enrollmentsRaw.forEach((e: EnrollmentFull) => e.studentId && studentIdsSet.add(e.studentId));
       const studentIds = Array.from(studentIdsSet);
       console.log('IDs de estudantes a carregar:', studentIds);
       
       // Para cada ID de estudante, buscar os dados completos
-      studentIds.forEach(studentId => {
+      studentIds.forEach((studentId: number) => {
         console.log('Buscando dados do estudante ID:', studentId);
         dispatch(fetchStudentById(studentId)).unwrap()
-          .then(student => {
+          .then((student: Student) => {
             console.log(`Dados do estudante ID ${studentId} carregados:`, student);
           })
-          .catch(error => {
+          .catch((error: Error) => {
             console.error(`Erro ao carregar estudante ID ${studentId}:`, error);
           });
       });
@@ -240,7 +249,7 @@ const FrequenciaAvaliacao: React.FC = () => {
   };
 
   const toggleAttendance = (studentId: number) => {
-    setAttendanceRecords(prev => ({
+    setAttendanceRecords((prev: Record<number, boolean>) => ({
       ...prev,
       [studentId]: !prev[studentId]
     }));
@@ -352,7 +361,7 @@ const FrequenciaAvaliacao: React.FC = () => {
     return <Alert severity="error">Curso não encontrado</Alert>;
   }
 
-  const courseModules = [
+  const courseModules: CourseModule[] = [
     { id: 1, name: 'Fundamentos' },
     { id: 2, name: 'Conceitos Intermediários' },
     { id: 3, name: 'Avançado' },
@@ -375,7 +384,7 @@ const FrequenciaAvaliacao: React.FC = () => {
       return '-';
     }
 
-    const sum = enrollment.evaluations.reduce((acc, evaluation) => acc + evaluation.grade, 0);
+    const sum = enrollment.evaluations.reduce((acc: number, evaluation: Evaluation) => acc + evaluation.grade, 0);
     const average = sum / enrollment.evaluations.length;
     
     return average.toFixed(1);
@@ -480,7 +489,7 @@ const FrequenciaAvaliacao: React.FC = () => {
                             <span>Carregando...</span>
                           </Box>
                         ) : enrollment.student?.name || 
-                          (students.find(s => s.id === enrollment.studentId)?.fullName || `Aluno ${enrollment.studentId}`)}
+                          (students.find((s: Student) => s.id === enrollment.studentId)?.fullName || `Aluno ${enrollment.studentId}`)}
                     </TableCell>
                     {!isMobile && <TableCell>{enrollment.status === 'active' ? 'Ativo' : 'Inativo'}</TableCell>}
                     <TableCell align="center" sx={{ display: { xs: isTablet ? 'table-cell' : 'none', sm: 'table-cell' } }}>
@@ -543,7 +552,7 @@ const FrequenciaAvaliacao: React.FC = () => {
                             <span>Carregando...</span>
                           </Box>
                         ) : enrollment.student?.name || 
-                          (students.find(s => s.id === enrollment.studentId)?.fullName || `Aluno ${enrollment.studentId}`)}
+                          (students.find((s: Student) => s.id === enrollment.studentId)?.fullName || `Aluno ${enrollment.studentId}`)}
                     </TableCell>
                     {!isMobile && <TableCell>{enrollment.status === 'active' ? 'Ativo' : 'Inativo'}</TableCell>}
                     <TableCell align="center">{getStudentAverageGrade(enrollment)}</TableCell>
@@ -590,11 +599,11 @@ const FrequenciaAvaliacao: React.FC = () => {
                   label="Módulo"
                   onChange={(e: SelectChangeEvent<string>) => {
                     setModuleId(Number(e.target.value));
-                    const selected = courseModules.find(m => m.id === Number(e.target.value));
+                    const selected = courseModules.find((m: CourseModule) => m.id === Number(e.target.value));
                     if (selected) setModuleName(selected.name);
                   }}
                 >
-                  {courseModules.map((module) => (
+                  {courseModules.map((module: CourseModule) => (
                     <MenuItem key={module.id} value={module.id}>
                       {module.name}
                     </MenuItem>

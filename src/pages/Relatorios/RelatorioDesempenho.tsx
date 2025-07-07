@@ -22,7 +22,7 @@ import {
   CircularProgress,
   Chip,
   Divider,
-  Alert
+  Alert,
 } from '@mui/material';
 import {
   BarChart,
@@ -35,7 +35,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from 'recharts';
 import {
   Assessment as AssessmentIcon,
@@ -43,26 +43,66 @@ import {
   School as SchoolIcon,
   MenuBook as BookIcon,
   Download as DownloadIcon,
-  Print as PrintIcon
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { RootState } from '../../store';
 import { fetchStudents } from '../../store/slices/studentsSlice';
 import { fetchCourses } from '../../store/slices/coursesSlice';
 import { fetchEnrollments } from '../../store/slices/enrollmentsSlice';
 import { fetchTeachers } from '../../store/slices/teachersSlice';
-import moment from 'moment';
+import {
+  Student,
+  Teacher,
+  Course,
+  EnrollmentFull,
+  Evaluation,
+  Attendance,
+} from '../../types';
+
+// Interfaces para os dados das tabelas
+interface CourseStudentRow {
+  id: number;
+  nome: string;
+  frequencia: string;
+  nota: string;
+  status: string;
+}
+
+interface StudentCourseRow {
+  id: number;
+  nome: string;
+  frequencia: string;
+  nota: string;
+  status: string;
+}
 
 // Cores para os gráficos
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+const COLORS = [
+  '#0088FE',
+  '#00C49F',
+  '#FFBB28',
+  '#FF8042',
+  '#8884d8',
+  '#82ca9d',
+];
 
 const RelatorioDesempenho: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { students, loading: loadingStudents } = useAppSelector(state => state.students);
-  const { courses, loading: loadingCourses } = useAppSelector(state => state.courses);
-  const { enrollments, loading: loadingEnrollments } = useAppSelector(state => state.enrollments);
-  const { teachers } = useAppSelector(state => state.teachers);
+  const { students, loading: loadingStudents } = useAppSelector(
+    (state: RootState) => state.students
+  );
+  const { courses, loading: loadingCourses } = useAppSelector(
+    (state: RootState) => state.courses
+  );
+  const { enrollments, loading: loadingEnrollments } = useAppSelector(
+    (state: RootState) => state.enrollments
+  );
+  const { teachers } = useAppSelector((state: RootState) => state.teachers);
 
-  const [filterType, setFilterType] = useState<'curso' | 'aluno' | 'geral'>('geral');
+  const [filterType, setFilterType] = useState<'curso' | 'aluno' | 'geral'>(
+    'geral'
+  );
   const [selectedCourseId, setSelectedCourseId] = useState<number | ''>('');
   const [selectedStudentId, setSelectedStudentId] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
@@ -73,7 +113,7 @@ const RelatorioDesempenho: React.FC = () => {
       dispatch(fetchStudents()),
       dispatch(fetchCourses()),
       dispatch(fetchEnrollments()),
-      dispatch(fetchTeachers())
+      dispatch(fetchTeachers()),
     ]).then(() => setLoading(false));
   }, [dispatch]);
 
@@ -91,15 +131,21 @@ const RelatorioDesempenho: React.FC = () => {
     setSelectedStudentId(Number(event.target.value));
   };
 
-  const calculateAttendanceRate = (enrollment: any) => {
+  const calculateAttendanceRate = (enrollment: EnrollmentFull) => {
     if (!enrollment.attendance || enrollment.attendance.length === 0) return 0;
-    const presentCount = enrollment.attendance.filter((a: any) => a.present).length;
+    const presentCount =
+      enrollment.attendance?.filter((a: Attendance) => a.present).length || 0;
     return (presentCount / enrollment.attendance.length) * 100;
   };
 
-  const calculateAverageGrade = (enrollment: any) => {
-    if (!enrollment.evaluations || enrollment.evaluations.length === 0) return 0;
-    const total = enrollment.evaluations.reduce((sum: number, e: any) => sum + e.grade, 0);
+  const calculateAverageGrade = (enrollment: EnrollmentFull) => {
+    if (!enrollment.evaluations || enrollment.evaluations.length === 0)
+      return 0;
+    const total =
+      enrollment.evaluations?.reduce(
+        (sum: number, e: Evaluation) => sum + e.grade,
+        0
+      ) || 0;
     return total / enrollment.evaluations.length;
   };
 
@@ -107,13 +153,15 @@ const RelatorioDesempenho: React.FC = () => {
   const generateCoursePerformanceData = () => {
     if (!courses || !enrollments) return [];
 
-    return courses.map(course => {
-      const courseEnrollments = enrollments.filter(e => e.courseId === course.id);
+    return courses.map((course: Course) => {
+      const courseEnrollments = enrollments.filter(
+        (e: EnrollmentFull) => e.courseId === course.id
+      );
       let totalAttendance = 0;
       let totalGrade = 0;
       let count = 0;
 
-      courseEnrollments.forEach(enrollment => {
+      courseEnrollments.forEach((enrollment: EnrollmentFull) => {
         const attendance = calculateAttendanceRate(enrollment);
         const grade = calculateAverageGrade(enrollment);
         if (attendance > 0) {
@@ -130,7 +178,7 @@ const RelatorioDesempenho: React.FC = () => {
         name: course.name,
         frequencia: count > 0 ? (totalAttendance / count).toFixed(1) : 0,
         nota: count > 0 ? (totalGrade / count).toFixed(1) : 0,
-        alunos: courseEnrollments.length
+        alunos: courseEnrollments.length,
       };
     });
   };
@@ -138,13 +186,15 @@ const RelatorioDesempenho: React.FC = () => {
   const generateStudentPerformanceData = () => {
     if (!students || !enrollments) return [];
 
-    return students.map(student => {
-      const studentEnrollments = enrollments.filter(e => e.studentId === student.id);
+    return students.map((student: Student) => {
+      const studentEnrollments = enrollments.filter(
+        (e: EnrollmentFull) => e.studentId === student.id
+      );
       let totalAttendance = 0;
       let totalGrade = 0;
       let count = 0;
 
-      studentEnrollments.forEach(enrollment => {
+      studentEnrollments.forEach((enrollment: EnrollmentFull) => {
         const attendance = calculateAttendanceRate(enrollment);
         const grade = calculateAverageGrade(enrollment);
         if (attendance > 0) {
@@ -161,7 +211,7 @@ const RelatorioDesempenho: React.FC = () => {
         name: student.fullName,
         frequencia: count > 0 ? (totalAttendance / count).toFixed(1) : 0,
         nota: count > 0 ? (totalGrade / count).toFixed(1) : 0,
-        cursos: studentEnrollments.length
+        cursos: studentEnrollments.length,
       };
     });
   };
@@ -169,43 +219,51 @@ const RelatorioDesempenho: React.FC = () => {
   const generateCourseDistributionData = () => {
     if (!courses || !enrollments) return [];
 
-    return courses.map(course => {
-      const courseEnrollments = enrollments.filter(e => e.courseId === course.id);
+    return courses.map((course: Course) => {
+      const courseEnrollments = enrollments.filter(
+        (e: EnrollmentFull) => e.courseId === course.id
+      );
       return {
         name: course.name,
-        value: courseEnrollments.length
+        value: courseEnrollments.length,
       };
     });
   };
 
-  const getSpecificCourseData = (courseId: number) => {
+  const getSpecificCourseData = (courseId: number): CourseStudentRow[] => {
     if (!courseId || !enrollments) return [];
 
-    const courseEnrollments = enrollments.filter(e => e.courseId === courseId);
-    return courseEnrollments.map(enrollment => {
-      const student = students.find(s => s.id === enrollment.studentId);
+    const courseEnrollments = enrollments.filter(
+      (e: EnrollmentFull) => e.courseId === courseId
+    );
+    return courseEnrollments.map((enrollment: EnrollmentFull) => {
+      const student = students.find(
+        (s: Student) => s.id === enrollment.studentId
+      );
       return {
         id: student?.id || enrollment.studentId,
         nome: student?.fullName || `Aluno ${enrollment.studentId}`,
         frequencia: calculateAttendanceRate(enrollment).toFixed(1),
         nota: calculateAverageGrade(enrollment).toFixed(1),
-        status: enrollment.status
+        status: enrollment.status,
       };
     });
   };
 
-  const getSpecificStudentData = (studentId: number) => {
+  const getSpecificStudentData = (studentId: number): StudentCourseRow[] => {
     if (!studentId || !enrollments) return [];
 
-    const studentEnrollments = enrollments.filter(e => e.studentId === studentId);
-    return studentEnrollments.map(enrollment => {
-      const course = courses.find(c => c.id === enrollment.courseId);
+    const studentEnrollments = enrollments.filter(
+      (e: EnrollmentFull) => e.studentId === studentId
+    );
+    return studentEnrollments.map((enrollment: EnrollmentFull) => {
+      const course = courses.find((c: Course) => c.id === enrollment.courseId);
       return {
         id: course?.id || enrollment.courseId,
         nome: course?.name || `Curso ${enrollment.courseId}`,
         frequencia: calculateAttendanceRate(enrollment).toFixed(1),
         nota: calculateAverageGrade(enrollment).toFixed(1),
-        status: enrollment.status
+        status: enrollment.status,
       };
     });
   };
@@ -220,7 +278,12 @@ const RelatorioDesempenho: React.FC = () => {
 
   if (loading || loadingStudents || loadingCourses || loadingEnrollments) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="500px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="500px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -259,7 +322,7 @@ const RelatorioDesempenho: React.FC = () => {
                   label="Curso"
                   onChange={handleCourseChange}
                 >
-                  {courses.map(course => (
+                  {courses.map((course: Course) => (
                     <MenuItem key={course.id} value={course.id}>
                       {course.name}
                     </MenuItem>
@@ -278,7 +341,7 @@ const RelatorioDesempenho: React.FC = () => {
                   label="Aluno"
                   onChange={handleStudentChange}
                 >
-                  {students.map(student => (
+                  {students.map((student: Student) => (
                     <MenuItem key={student.id} value={student.id}>
                       {student.fullName}
                     </MenuItem>
@@ -315,7 +378,10 @@ const RelatorioDesempenho: React.FC = () => {
             <Grid item xs={12} md={6}>
               <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
-                  <BookIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                  <BookIcon
+                    fontSize="small"
+                    sx={{ verticalAlign: 'middle', mr: 1 }}
+                  />
                   Desempenho por Curso
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
@@ -329,7 +395,11 @@ const RelatorioDesempenho: React.FC = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar name="Frequência (%)" dataKey="frequencia" fill="#8884d8" />
+                    <Bar
+                      name="Frequência (%)"
+                      dataKey="frequencia"
+                      fill="#8884d8"
+                    />
                     <Bar name="Nota Média" dataKey="nota" fill="#82ca9d" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -339,7 +409,10 @@ const RelatorioDesempenho: React.FC = () => {
             <Grid item xs={12} md={6}>
               <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
-                  <GroupIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                  <GroupIcon
+                    fontSize="small"
+                    sx={{ verticalAlign: 'middle', mr: 1 }}
+                  />
                   Distribuição de Matrículas
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
@@ -350,16 +423,31 @@ const RelatorioDesempenho: React.FC = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({
+                        name,
+                        percent,
+                      }: {
+                        name: string;
+                        percent?: number;
+                      }) =>
+                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
+                      }
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {generateCourseDistributionData().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
+                      {generateCourseDistributionData().map(
+                        (entry: any, index: number) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        )
+                      )}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value} alunos`, 'Matrículas']} />
+                    <Tooltip
+                      formatter={(value) => [`${value} alunos`, 'Matrículas']}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </Paper>
@@ -368,7 +456,10 @@ const RelatorioDesempenho: React.FC = () => {
 
           <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
-              <BookIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+              <BookIcon
+                fontSize="small"
+                sx={{ verticalAlign: 'middle', mr: 1 }}
+              />
               Resumo dos Cursos
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -391,10 +482,14 @@ const RelatorioDesempenho: React.FC = () => {
                       <TableCell align="center">{course.frequencia}%</TableCell>
                       <TableCell align="center">{course.nota}</TableCell>
                       <TableCell align="center">
-                        <Chip 
+                        <Chip
                           size="small"
-                          label={Number(course.alunos) > 0 ? "Ativo" : "Inativo"} 
-                          color={Number(course.alunos) > 0 ? "success" : "default"}
+                          label={
+                            Number(course.alunos) > 0 ? 'Ativo' : 'Inativo'
+                          }
+                          color={
+                            Number(course.alunos) > 0 ? 'success' : 'default'
+                          }
                         />
                       </TableCell>
                     </TableRow>
@@ -411,22 +506,26 @@ const RelatorioDesempenho: React.FC = () => {
         <Paper elevation={3} sx={{ p: 3 }}>
           <Box mb={2}>
             <Typography variant="h6">
-              {courses.find(c => c.id === selectedCourseId)?.name || 'Curso Selecionado'}
+              {courses.find((c: Course) => c.id === selectedCourseId)?.name ||
+                'Curso Selecionado'}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Professor: {
-                (() => {
-                  const course = courses.find(c => c.id === selectedCourseId);
-                  if (!course) return 'N/A';
-                  const teacher = teachers.find(t => t.id === course.teacherId);
-                  return teacher ? teacher.fullName : 'N/A';
-                })()
-              }
+              Professor:{' '}
+              {(() => {
+                const course = courses.find(
+                  (c: Course) => c.id === selectedCourseId
+                );
+                if (!course) return 'N/A';
+                const teacher = teachers.find(
+                  (t: Teacher) => t.id === course.teacherId
+                );
+                return teacher ? teacher.fullName : 'N/A';
+              })()}
             </Typography>
           </Box>
-          
+
           <Divider sx={{ mb: 2 }} />
-          
+
           <TableContainer>
             <Table>
               <TableHead>
@@ -439,21 +538,25 @@ const RelatorioDesempenho: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {getSpecificCourseData(Number(selectedCourseId)).map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.id}</TableCell>
-                    <TableCell>{row.nome}</TableCell>
-                    <TableCell align="center">{row.frequencia}%</TableCell>
-                    <TableCell align="center">{row.nota}</TableCell>
-                    <TableCell align="center">
-                      <Chip 
-                        size="small"
-                        label={row.status === 'active' ? "Ativo" : "Inativo"} 
-                        color={row.status === 'active' ? "success" : "default"}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {getSpecificCourseData(Number(selectedCourseId)).map(
+                  (row: CourseStudentRow) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.nome}</TableCell>
+                      <TableCell align="center">{row.frequencia}%</TableCell>
+                      <TableCell align="center">{row.nota}</TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          size="small"
+                          label={row.status === 'active' ? 'Ativo' : 'Inativo'}
+                          color={
+                            row.status === 'active' ? 'success' : 'default'
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -471,15 +574,16 @@ const RelatorioDesempenho: React.FC = () => {
         <Paper elevation={3} sx={{ p: 3 }}>
           <Box mb={2}>
             <Typography variant="h6">
-              {students.find(s => s.id === selectedStudentId)?.fullName || 'Aluno Selecionado'}
+              {students.find((s: Student) => s.id === selectedStudentId)
+                ?.fullName || 'Aluno Selecionado'}
             </Typography>
             <Typography variant="body2" color="textSecondary">
               Matrícula: {selectedStudentId}
             </Typography>
           </Box>
-          
+
           <Divider sx={{ mb: 2 }} />
-          
+
           <TableContainer>
             <Table>
               <TableHead>
@@ -492,21 +596,25 @@ const RelatorioDesempenho: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {getSpecificStudentData(Number(selectedStudentId)).map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.id}</TableCell>
-                    <TableCell>{row.nome}</TableCell>
-                    <TableCell align="center">{row.frequencia}%</TableCell>
-                    <TableCell align="center">{row.nota}</TableCell>
-                    <TableCell align="center">
-                      <Chip 
-                        size="small"
-                        label={row.status === 'active' ? "Ativo" : "Inativo"} 
-                        color={row.status === 'active' ? "success" : "default"}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {getSpecificStudentData(Number(selectedStudentId)).map(
+                  (row: StudentCourseRow) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.nome}</TableCell>
+                      <TableCell align="center">{row.frequencia}%</TableCell>
+                      <TableCell align="center">{row.nota}</TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          size="small"
+                          label={row.status === 'active' ? 'Ativo' : 'Inativo'}
+                          color={
+                            row.status === 'active' ? 'success' : 'default'
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
               </TableBody>
             </Table>
           </TableContainer>

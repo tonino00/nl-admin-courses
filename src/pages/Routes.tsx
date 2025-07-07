@@ -26,6 +26,7 @@ import FormCurso from './Cursos/FormCurso';
 import DetalhesCurso from './Cursos/DetalhesCurso';
 import FrequenciaAvaliacao from './Cursos/FrequenciaAvaliacao';
 import Certificado from './Cursos/Certificado';
+import MatricularAlunos from './Cursos/MatricularAlunos';
 
 // Relatórios
 import RelatorioDesempenho from './Relatorios/RelatorioDesempenho';
@@ -103,6 +104,7 @@ const Routes = () => {
           <Route path="editar/:id" element={<FormCurso />} />
           <Route path=":id" element={<DetalhesCurso />} />
           <Route path=":id/frequencia-avaliacao" element={<FrequenciaAvaliacao />} />
+          <Route path=":id/matricular-alunos" element={<MatricularAlunos />} />
           <Route path=":courseId/certificado/:studentId" element={<Certificado />} />
         </Route>
 

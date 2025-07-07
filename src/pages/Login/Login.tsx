@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -22,9 +22,9 @@ import { RootState } from '../../store';
 import { LoginCredentials } from '../../types';
 
 const Login: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { error, loading } = useAppSelector((state: RootState) => state.auth);
   
   const [credentials, setCredentials] = useState<LoginCredentials>({
     username: '',

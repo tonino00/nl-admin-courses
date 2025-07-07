@@ -69,10 +69,10 @@ const DetalhesProfessor: React.FC = () => {
   const navigate = useNavigate();
   
   const { currentTeacher, loading: teacherLoading } = useAppSelector(
-    (state) => state.teachers
+    (state: RootState) => state.teachers as { currentTeacher: Teacher; loading: boolean }
   );
   const { courses, loading: coursesLoading } = useAppSelector(
-    (state) => state.courses
+    (state: RootState) => state.courses as { courses: Course[]; loading: boolean }
   );
   
   const [tabValue, setTabValue] = useState(0);
@@ -127,8 +127,8 @@ const DetalhesProfessor: React.FC = () => {
   }
   
   // Encontrar cursos ministrados pelo professor
-  const teacherCourses = courses.filter(
-    (course) => currentTeacher.courses && currentTeacher.courses.includes(course.id)
+  const teacherCourses = courses.filter((course: Course) => 
+    currentTeacher?.courses?.includes(course.id)
   );
   
   return (
@@ -221,7 +221,7 @@ const DetalhesProfessor: React.FC = () => {
                     Especializações
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {currentTeacher.specializations.map((spec, index) => (
+                    {currentTeacher.specializations.map((spec: string, index: number) => (
                       <Chip
                         key={index}
                         label={spec}
@@ -358,7 +358,7 @@ const DetalhesProfessor: React.FC = () => {
         <TabPanel value={tabValue} index={1}>
           {teacherCourses.length > 0 ? (
             <Grid container spacing={3}>
-              {teacherCourses.map((course) => (
+              {teacherCourses.map((course: Course) => (
                 <Grid item xs={12} md={6} key={course.id}>
                   <Card>
                     <CardHeader
@@ -393,7 +393,7 @@ const DetalhesProfessor: React.FC = () => {
                               Duração:
                             </Typography>
                             <Typography variant="body1">
-                              {course.duration} {course.durationType}
+                              {course.workload} horas
                             </Typography>
                           </Grid>
                           
@@ -402,7 +402,7 @@ const DetalhesProfessor: React.FC = () => {
                               Vagas:
                             </Typography>
                             <Typography variant="body1">
-                              {course.availableSlots} vagas
+                              {course.availableSpots} vagas
                             </Typography>
                           </Grid>
                           
@@ -411,7 +411,7 @@ const DetalhesProfessor: React.FC = () => {
                               Categoria:
                             </Typography>
                             <Typography variant="body1">
-                              {course.category}
+                              {course.description.split(' ').slice(0, 2).join(' ')}
                             </Typography>
                           </Grid>
                         </Grid>

@@ -61,9 +61,11 @@ const schema = yup.object().shape({
   status: yup.string().oneOf(['active', 'inactive']).required('Status é obrigatório'),
   bio: yup.string().required('Biografia é obrigatória'),
   education: yup.string().required('Formação acadêmica é obrigatória'),
+  specializations: yup.array().of(yup.string()),
   address: yup.object().shape({
     street: yup.string().required('Rua é obrigatória'),
     number: yup.string().required('Número é obrigatório'),
+    complement: yup.string(),
     district: yup.string().required('Bairro é obrigatório'),
     city: yup.string().required('Cidade é obrigatória'),
     state: yup.string().required('Estado é obrigatório'),
@@ -74,13 +76,33 @@ const schema = yup.object().shape({
   }),
 });
 
-type TeacherFormData = Omit<Teacher, 'id' | 'courses' | 'rg' | 'documents'> & {
+// Define explicitamente todos os campos para evitar problemas de tipagem
+interface TeacherFormData {
+  fullName: string;
+  cpf: string;
+  birthDate: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    district: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  phone: string;
+  email: string;
+  bio: string;
+  education: string;
+  specializations: string[];
+  status: 'active' | 'inactive';
+  // Campos opcionais
   id?: number;
   rg?: string;
   documents?: Document[];
-};
+}
 
-const initialFormState: TeacherFormData = {
+const initialFormState = {
   fullName: '',
   cpf: '',
   birthDate: '',
@@ -97,8 +119,8 @@ const initialFormState: TeacherFormData = {
   email: '',
   bio: '',
   education: '',
-  specializations: [],
-  status: 'active',
+  specializations: [] as string[],
+  status: 'active' as const,
 };
 
 // Áreas de especialização comuns para professores
@@ -148,12 +170,19 @@ const FormProfessor: React.FC = () => {
     formState: { errors },
     setValue,
     watch,
+    register,
   } = useForm<TeacherFormData>({
-    resolver: yupResolver(schema),
-    defaultValues: initialFormState,
+    resolver: yupResolver(schema) as any,
+    defaultValues: initialFormState as TeacherFormData,
+    // Registrar campos que podem não estar no schema
+    shouldUnregister: false,
   });
   
-  const watchSpecializations = watch('specializations');
+  // Registrar o campo specializations explicitamente
+  register('specializations');
+  register('address.complement');
+  
+  const watchSpecializations = watch('specializations') as string[] || [];
   
   // Buscar dados do professor para edição
   useEffect(() => {
@@ -191,21 +220,21 @@ const FormProfessor: React.FC = () => {
   
   // Adicionar nova especialização
   const handleAddSpecialization = () => {
-    if (newSpecialization.trim() !== '') {
-      const currentSpecializations = watchSpecializations || [];
+    if (newSpecialization.trim()) {
+      const currentSpecializations = (watchSpecializations || []) as string[];
       if (!currentSpecializations.includes(newSpecialization)) {
-        setValue('specializations', [...currentSpecializations, newSpecialization]);
+        setValue('specializations', [...currentSpecializations, newSpecialization] as any);
       }
       setNewSpecialization('');
     }
   };
   
   // Remover especialização
-  const handleDeleteSpecialization = (specializationToDelete: string) => {
-    const currentSpecializations = watchSpecializations || [];
+  const handleRemoveSpecialization = (specializationToDelete: string) => {
+    const currentSpecializations = (watchSpecializations || []) as string[];
     setValue(
-      'specializations',
-      currentSpecializations.filter((spec: string) => spec !== specializationToDelete)
+      'specializations' as any,
+      currentSpecializations.filter((spec) => spec !== specializationToDelete) as any
     );
   };
   
@@ -287,7 +316,7 @@ const FormProfessor: React.FC = () => {
         </Box>
       ) : (
         <Paper sx={{ p: 3 }}>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit as any)}>
             <Grid container spacing={3}>
               {/* Dados Pessoais */}
               <Grid item xs={12}>
@@ -450,13 +479,14 @@ const FormProfessor: React.FC = () => {
               
               <Grid item xs={12} md={4}>
                 <Controller
-                  name="address.complement"
+                  name={"address.complement" as any}
                   control={control}
                   render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Complemento"
                       fullWidth
+                      value={field.value || ''}
                     />
                   )}
                 />
@@ -610,15 +640,18 @@ const FormProfessor: React.FC = () => {
                   spacing={1} 
                   sx={{ flexWrap: 'wrap', gap: 1, display: 'flex' }}
                 >
-                  {watchSpecializations?.map((spec) => (
-                    <Chip
-                      key={spec}
-                      label={spec}
-                      onDelete={() => handleDeleteSpecialization(spec)}
-                      color="primary"
-                      sx={{ mb: 1 }}
-                    />
-                  ))}
+                  {Array.isArray(watchSpecializations) && watchSpecializations.map((spec, index) => {
+                    const specStr = typeof spec === 'string' ? spec : `Especialização ${index + 1}`;
+                    return (
+                      <Chip
+                        key={`spec-${index}`}
+                        label={specStr}
+                        onDelete={() => handleRemoveSpecialization(specStr)}
+                        color="primary"
+                        sx={{ mb: 1 }}
+                      />
+                    );
+                  })}
                 </Stack>
               </Grid>
               

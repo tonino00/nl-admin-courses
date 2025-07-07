@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '../../hooks';
 import {
   Box,
   Grid,
@@ -30,11 +30,11 @@ import { fetchEnrollments } from '../../store/slices/enrollmentsSlice';
 import { Student, Teacher, Course, EnrollmentFull } from '../../types';
 
 const Dashboard: React.FC = () => {
-  const dispatch = useDispatch();
-  const { students, loading: studentsLoading } = useSelector((state: RootState) => state.students);
-  const { teachers, loading: teachersLoading } = useSelector((state: RootState) => state.teachers);
-  const { courses, loading: coursesLoading } = useSelector((state: RootState) => state.courses);
-  const { enrollments, loading: enrollmentsLoading } = useSelector((state: RootState) => state.enrollments);
+  const dispatch = useAppDispatch();
+  const { students, loading: studentsLoading } = useAppSelector((state: RootState) => state.students as { students: Student[]; loading: boolean });
+  const { teachers, loading: teachersLoading } = useAppSelector((state: RootState) => state.teachers as { teachers: Teacher[]; loading: boolean });
+  const { courses, loading: coursesLoading } = useAppSelector((state: RootState) => state.courses as { courses: Course[]; loading: boolean });
+  const { enrollments, loading: enrollmentsLoading } = useAppSelector((state: RootState) => state.enrollments as { enrollments: EnrollmentFull[]; loading: boolean });
   
   useEffect(() => {
     dispatch(fetchStudents());
@@ -46,8 +46,8 @@ const Dashboard: React.FC = () => {
   const loading = studentsLoading || teachersLoading || coursesLoading || enrollmentsLoading;
 
   // Calculate active students and courses
-  const activeStudents = students.filter(student => student.status === 'active');
-  const activeCourses = courses.filter(course => course.status === 'active');
+  const activeStudents = students.filter((student: Student) => student.status === 'active');
+  const activeCourses = courses.filter((course: Course) => course.status === 'active');
   
   // Get recent enrollments (last 5)
   const recentEnrollments = [...enrollments]
@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
 
   // Get courses with low availability (less than 30% spots left)
   const lowAvailabilityCourses = courses
-    .filter(course => (course.availableSpots / course.totalSpots) < 0.3)
+    .filter((course: Course) => (course.availableSpots / course.totalSpots) < 0.3)
     .slice(0, 5);
   
   return (
@@ -173,8 +173,8 @@ const Dashboard: React.FC = () => {
                   <List>
                     {recentEnrollments.length > 0 ? (
                       recentEnrollments.map((enrollment) => {
-                        const student = students.find(s => s.id === enrollment.studentId);
-                        const course = courses.find(c => c.id === enrollment.courseId);
+                        const student = students.find((s: Student) => s.id === enrollment.studentId);
+                        const course = courses.find((c: Course) => c.id === enrollment.courseId);
                         
                         return (
                           <React.Fragment key={enrollment.id}>
@@ -222,9 +222,9 @@ const Dashboard: React.FC = () => {
                 <CardContent>
                   <List>
                     {lowAvailabilityCourses.length > 0 ? (
-                      lowAvailabilityCourses.map((course) => {
+                      lowAvailabilityCourses.map((course: Course) => {
                         const availabilityPercentage = (course.availableSpots / course.totalSpots) * 100;
-                        const teacher = teachers.find(t => t.id === course.teacherId);
+                        const teacher = teachers.find((t: Teacher) => t.id === course.teacherId);
                         
                         return (
                           <React.Fragment key={course.id}>

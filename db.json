@@ -199,32 +199,30 @@
       "id": 1
     },
     {
-      "id": 2,
-      "courseData": {
-        "schedule": [
-          {
-            "day": "Tuesday",
-            "start": "14:00",
-            "end": "17:00"
-          },
-          {
-            "day": "Thursday",
-            "start": "14:00",
-            "end": "17:00"
-          }
-        ],
-        "prerequisites": [],
-        "status": "active",
-        "teacherId": 2,
-        "totalSpots": 12,
-        "shifts": [
-          "afternoon"
-        ],
-        "workload": 60,
-        "description": "Fundamentos de bancos de dados SQL com PostgreSQL",
-        "name": "Banco de Dados Relacionais",
-        "availableSpots": 7
-      }
+      "name": "Banco de Dados Relacionais",
+      "description": "Fundamentos de bancos de dados SQL com PostgreSQL",
+      "workload": 60,
+      "shifts": [
+        "afternoon"
+      ],
+      "totalSpots": 12,
+      "availableSpots": 7,
+      "prerequisites": [],
+      "schedule": [
+        {
+          "day": "Tuesday",
+          "start": "14:00",
+          "end": "17:00"
+        },
+        {
+          "day": "Thursday",
+          "start": "14:00",
+          "end": "17:00"
+        }
+      ],
+      "teacherId": 3,
+      "status": "active",
+      "id": 2
     }
   ],
   "enrollments": [

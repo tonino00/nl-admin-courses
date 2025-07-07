@@ -81,6 +81,7 @@ export interface EnrollmentFull {
   id: number;
   studentId: number;
   courseId: number;
+  studentName?: string; // Nome do aluno para facilitar a exibição sem precisar consultar a tabela de estudantes
   enrollmentDate: string;
   status: 'active' | 'completed' | 'canceled';
   attendance: Attendance[];

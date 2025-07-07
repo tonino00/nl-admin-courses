@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import moment from 'moment';
+
 import {
   Box,
   Button,
@@ -36,7 +36,12 @@ import {
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { createCourse, updateCourse, fetchCourseById, clearCurrentCourse } from '../../store/slices/coursesSlice';
+import {
+  createCourse,
+  updateCourse,
+  fetchCourseById,
+  clearCurrentCourse,
+} from '../../store/slices/coursesSlice';
 import { fetchTeachers } from '../../store/slices/teachersSlice';
 import { Course, Teacher, CoursesState, TeachersState } from '../../types';
 import { RootState } from '../../store';
@@ -45,16 +50,21 @@ import { RootState } from '../../store';
 const courseSchema = yup.object({
   name: yup.string().required('Nome é obrigatório'),
   description: yup.string().required('Descrição é obrigatória'),
-  workload: yup.number()
+  workload: yup
+    .number()
     .typeError('Carga horária deve ser um número')
     .required('Carga horária é obrigatória')
     .positive('Carga horária deve ser positiva'),
   shifts: yup.array().of(yup.string()).min(1, 'Selecione pelo menos um turno'),
-  totalSpots: yup.number()
+  totalSpots: yup
+    .number()
     .typeError('Total de vagas deve ser um número')
     .required('Total de vagas é obrigatório')
     .positive('Total de vagas deve ser positivo'),
-  teacherId: yup.number().typeError('Selecione um professor').required('Professor é obrigatório'),
+  teacherId: yup
+    .number()
+    .typeError('Selecione um professor')
+    .required('Professor é obrigatório'),
   status: yup.string().required('Status é obrigatório'),
   prerequisites: yup.array().of(yup.number()),
   schedule: yup.array().of(
@@ -76,22 +86,28 @@ const FormCurso: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
-  
-  const { currentCourse, loading, error } = useAppSelector((state: RootState) => state.courses as CoursesState);
-  const teachersState = useAppSelector((state: RootState) => state.teachers as TeachersState);
+
+  const { currentCourse, loading, error } = useAppSelector(
+    (state: RootState) => state.courses as CoursesState
+  );
+  const teachersState = useAppSelector(
+    (state: RootState) => state.teachers as TeachersState
+  );
   const { teachers } = teachersState;
-  const { courses } = useAppSelector((state: RootState) => state.courses as CoursesState);
+  const { courses } = useAppSelector(
+    (state: RootState) => state.courses as CoursesState
+  );
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [teachersLoading, setTeachersLoading] = useState(false);
 
   // Configuração do formulário
-  const { 
-    control, 
-    handleSubmit, 
-    reset, 
+  const {
+    control,
+    handleSubmit,
+    reset,
     formState: { errors },
     setValue,
-    watch
+    watch,
   } = useForm<CourseFormData>({
     resolver: yupResolver(courseSchema),
     defaultValues: {
@@ -103,16 +119,14 @@ const FormCurso: React.FC = () => {
       teacherId: 0,
       status: 'active',
       prerequisites: [],
-      schedule: [
-        { day: 'Monday', start: '08:00', end: '10:00' }
-      ]
-    }
+      schedule: [{ day: 'Monday', start: '08:00', end: '10:00' }],
+    },
   });
 
   // Field Array para gerenciar horários
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'schedule'
+    name: 'schedule',
   });
 
   // Carrega os dados do curso para edição
@@ -129,13 +143,13 @@ const FormCurso: React.FC = () => {
       .finally(() => {
         setTeachersLoading(false);
       });
-    
+
     if (id) {
       dispatch(fetchCourseById(Number(id)));
     } else {
       dispatch(clearCurrentCourse());
     }
-    
+
     return () => {
       dispatch(clearCurrentCourse());
     };
@@ -153,7 +167,9 @@ const FormCurso: React.FC = () => {
         teacherId: currentCourse.teacherId,
         status: currentCourse.status,
         prerequisites: currentCourse.prerequisites || [],
-        schedule: currentCourse.schedule || [{ day: 'Monday', start: '08:00', end: '10:00' }]
+        schedule: currentCourse.schedule || [
+          { day: 'Monday', start: '08:00', end: '10:00' },
+        ],
       });
     }
   }, [currentCourse, reset]);
@@ -164,7 +180,8 @@ const FormCurso: React.FC = () => {
       // Calcula as vagas disponíveis (para novos cursos igual ao total, para edição mantém a diferença)
       let availableSpots = data.totalSpots;
       if (currentCourse) {
-        const spotsDifference = currentCourse.totalSpots - currentCourse.availableSpots;
+        const spotsDifference =
+          currentCourse.totalSpots - currentCourse.availableSpots;
         availableSpots = data.totalSpots - spotsDifference;
       }
 
@@ -177,28 +194,32 @@ const FormCurso: React.FC = () => {
         totalSpots: data.totalSpots,
         availableSpots: availableSpots,
         // Filtrar valores undefined
-        prerequisites: (data.prerequisites || []).filter((p): p is number => p !== undefined),
+        prerequisites: (data.prerequisites || []).filter(
+          (p): p is number => p !== undefined
+        ),
         schedule: data.schedule || [],
         teacherId: data.teacherId,
-        status: data.status as 'active' | 'inactive'
+        status: data.status as 'active' | 'inactive',
       };
-      
+
       if (id) {
         // Para atualização, passamos o id e os dados do curso
         const numericId = Number(id);
         // Para atender à assinatura do tipo, incluir o id no objeto courseData também
-        await dispatch(updateCourse({
-          id: numericId,
-          courseData: {
-            ...courseData,
-            id: numericId
-          }
-        })).unwrap();
+        await dispatch(
+          updateCourse({
+            id: numericId,
+            courseData: {
+              ...courseData,
+              id: numericId,
+            },
+          })
+        ).unwrap();
       } else {
         // Para criação, passamos apenas os dados do curso
         await dispatch(createCourse(courseData)).unwrap();
       }
-      
+
       setSubmitSuccess(true);
       setTimeout(() => {
         navigate('/cursos');
@@ -215,11 +236,22 @@ const FormCurso: React.FC = () => {
   return (
     <Box maxWidth="lg" sx={{ mx: 'auto', p: isMobile ? 1 : 2 }}>
       <Paper elevation={3} sx={{ p: isMobile ? 2 : 3 }}>
-        <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}
-             flexDirection={isMobile ? 'column' : 'row'}
-             textAlign={isMobile ? 'center' : 'left'}>
-          <ScheduleIcon color="primary" sx={{ mr: isMobile ? 0 : 1, mb: isMobile ? 1 : 0, fontSize: isMobile ? 24 : 30 }} />
-          <Typography variant={isMobile ? "h6" : "h5"} component="h1">
+        <Box
+          display="flex"
+          alignItems="center"
+          mb={isMobile ? 2 : 3}
+          flexDirection={isMobile ? 'column' : 'row'}
+          textAlign={isMobile ? 'center' : 'left'}
+        >
+          <ScheduleIcon
+            color="primary"
+            sx={{
+              mr: isMobile ? 0 : 1,
+              mb: isMobile ? 1 : 0,
+              fontSize: isMobile ? 24 : 30,
+            }}
+          />
+          <Typography variant={isMobile ? 'h6' : 'h5'} component="h1">
             {id ? 'Editar Curso' : 'Novo Curso'}
           </Typography>
         </Box>
@@ -248,7 +280,7 @@ const FormCurso: React.FC = () => {
                     label="Nome do Curso"
                     variant="outlined"
                     fullWidth
-                    size={isMobile ? "small" : "medium"}
+                    size={isMobile ? 'small' : 'medium'}
                     error={!!errors.name}
                     helperText={errors.name?.message}
                   />
@@ -263,10 +295,10 @@ const FormCurso: React.FC = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={isMobile ? "Carga Horária" : "Carga Horária (horas)"}
+                    label={isMobile ? 'Carga Horária' : 'Carga Horária (horas)'}
                     variant="outlined"
                     fullWidth
-                    size={isMobile ? "small" : "medium"}
+                    size={isMobile ? 'small' : 'medium'}
                     type="number"
                     error={!!errors.workload}
                     helperText={errors.workload?.message}
@@ -287,7 +319,7 @@ const FormCurso: React.FC = () => {
                     fullWidth
                     multiline
                     rows={isMobile ? 2 : 3}
-                    size={isMobile ? "small" : "medium"}
+                    size={isMobile ? 'small' : 'medium'}
                     error={!!errors.description}
                     helperText={errors.description?.message}
                   />
@@ -308,14 +340,19 @@ const FormCurso: React.FC = () => {
                       multiple
                       input={<OutlinedInput label="Turnos" />}
                       renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box
+                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                        >
                           {selected.map((value) => (
-                            <Chip 
-                              key={value} 
+                            <Chip
+                              key={value}
                               label={
-                                value === 'morning' ? 'Manhã' : 
-                                value === 'afternoon' ? 'Tarde' : 'Noite'
-                              } 
+                                value === 'morning'
+                                  ? 'Manhã'
+                                  : value === 'afternoon'
+                                  ? 'Tarde'
+                                  : 'Noite'
+                              }
                             />
                           ))}
                         </Box>
@@ -339,7 +376,9 @@ const FormCurso: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth error={!!errors.teacherId}>
-                    <InputLabel id="teacher-label">Professor Responsável</InputLabel>
+                    <InputLabel id="teacher-label">
+                      Professor Responsável
+                    </InputLabel>
                     <Select
                       {...field}
                       labelId="teacher-label"
@@ -356,11 +395,15 @@ const FormCurso: React.FC = () => {
                           </MenuItem>
                         ))
                       ) : (
-                        <MenuItem value="">Nenhum professor encontrado</MenuItem>
+                        <MenuItem value="">
+                          Nenhum professor encontrado
+                        </MenuItem>
                       )}
                     </Select>
                     {errors.teacherId && (
-                      <FormHelperText>{errors.teacherId.message}</FormHelperText>
+                      <FormHelperText>
+                        {errors.teacherId.message}
+                      </FormHelperText>
                     )}
                   </FormControl>
                 )}
@@ -392,11 +435,7 @@ const FormCurso: React.FC = () => {
                 render={({ field }) => (
                   <FormControl fullWidth error={!!errors.status}>
                     <InputLabel id="status-label">Status</InputLabel>
-                    <Select
-                      {...field}
-                      labelId="status-label"
-                      label="Status"
-                    >
+                    <Select {...field} labelId="status-label" label="Status">
                       <MenuItem value="active">Ativo</MenuItem>
                       <MenuItem value="inactive">Inativo</MenuItem>
                     </Select>
@@ -421,18 +460,29 @@ const FormCurso: React.FC = () => {
                       multiple
                       input={<OutlinedInput label="Pré-requisitos" />}
                       renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box
+                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                        >
                           {selected.map((value) => {
-                            const prerequisiteCourse = courses.find((course: Course) => course.id === value);
+                            const prerequisiteCourse = courses.find(
+                              (course: Course) => course.id === value
+                            );
                             return (
-                              <Chip key={value} label={prerequisiteCourse?.name || `Curso ${value}`} />
+                              <Chip
+                                key={value}
+                                label={
+                                  prerequisiteCourse?.name || `Curso ${value}`
+                                }
+                              />
                             );
                           })}
                         </Box>
                       )}
                     >
                       {courses
-                        .filter((course: Course) => !id || course.id !== parseInt(id))
+                        .filter(
+                          (course: Course) => !id || course.id !== parseInt(id)
+                        )
                         .map((course: Course) => (
                           <MenuItem key={course.id} value={course.id}>
                             {course.name}
@@ -446,13 +496,13 @@ const FormCurso: React.FC = () => {
 
             <Grid item xs={12}>
               <Box sx={{ mb: 2 }}>
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
+                <Box
+                  sx={{
+                    display: 'flex',
                     flexDirection: isMobile ? 'column' : 'row',
                     alignItems: isMobile ? 'flex-start' : 'center',
                     gap: isMobile ? 1 : 0,
-                    mb: 2 
+                    mb: 2,
                   }}
                 >
                   <Typography variant="h6" component="h2">
@@ -465,26 +515,36 @@ const FormCurso: React.FC = () => {
                     onClick={handleAddSchedule}
                     sx={{ ml: isMobile ? 0 : 2 }}
                   >
-                    {isMobile ? "Add Horário" : "Adicionar Horário"}
+                    {isMobile ? 'Add Horário' : 'Adicionar Horário'}
                   </Button>
                 </Box>
               </Box>
 
               {fields.map((field, index) => (
-                <Box key={field.id} sx={{ 
-                  display: 'flex', 
-                  flexDirection: isMobile ? 'column' : 'row', 
-                  gap: isMobile ? 1 : 2, 
-                  mb: 2, 
-                  alignItems: isMobile ? 'stretch' : 'center',
-                  '& .MuiTextField-root': { width: isMobile ? '100%' : 'auto' },
-                  '& .MuiFormControl-root': { width: isMobile ? '100%' : 'auto' }
-                }}>
+                <Box
+                  key={field.id}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: isMobile ? 1 : 2,
+                    mb: 2,
+                    alignItems: isMobile ? 'stretch' : 'center',
+                    '& .MuiTextField-root': {
+                      width: isMobile ? '100%' : 'auto',
+                    },
+                    '& .MuiFormControl-root': {
+                      width: isMobile ? '100%' : 'auto',
+                    },
+                  }}
+                >
                   <Controller
                     name={`schedule.${index}.day`}
                     control={control}
                     render={({ field }) => (
-                      <FormControl fullWidth error={!!errors.schedule?.[index]?.day}>
+                      <FormControl
+                        fullWidth
+                        error={!!errors.schedule?.[index]?.day}
+                      >
                         <InputLabel id={`day-label-${index}`}>Dia</InputLabel>
                         <Select
                           {...field}
@@ -513,7 +573,7 @@ const FormCurso: React.FC = () => {
                         InputLabelProps={{ shrink: true }}
                         error={!!errors.schedule?.[index]?.start}
                         helperText={errors.schedule?.[index]?.start?.message}
-                        size={isMobile ? "small" : "medium"}
+                        size={isMobile ? 'small' : 'medium'}
                         fullWidth={isMobile}
                       />
                     )}
@@ -530,30 +590,30 @@ const FormCurso: React.FC = () => {
                         InputLabelProps={{ shrink: true }}
                         error={!!errors.schedule?.[index]?.end}
                         helperText={errors.schedule?.[index]?.end?.message}
-                        size={isMobile ? "small" : "medium"}
+                        size={isMobile ? 'small' : 'medium'}
                         fullWidth={isMobile}
                       />
                     )}
                   />
 
-                  <IconButton 
-                    color="error" 
+                  <IconButton
+                    color="error"
                     onClick={() => fields.length > 1 && remove(index)}
                     disabled={fields.length <= 1}
                     sx={{ alignSelf: isMobile ? 'flex-end' : 'center' }}
-                    size={isMobile ? "small" : "medium"}
+                    size={isMobile ? 'small' : 'medium'}
                   >
-                    <DeleteIcon fontSize={isMobile ? "small" : "medium"} />
+                    <DeleteIcon fontSize={isMobile ? 'small' : 'medium'} />
                   </IconButton>
                 </Box>
               ))}
             </Grid>
 
             <Grid item xs={12}>
-              <Stack 
-                direction={isMobile ? "column" : "row"} 
-                spacing={isMobile ? 1 : 2} 
-                justifyContent={isMobile ? "stretch" : "flex-end"} 
+              <Stack
+                direction={isMobile ? 'column' : 'row'}
+                spacing={isMobile ? 1 : 2}
+                justifyContent={isMobile ? 'stretch' : 'flex-end'}
                 sx={{ mt: 3 }}
               >
                 <Button
@@ -561,18 +621,18 @@ const FormCurso: React.FC = () => {
                   startIcon={!isMobile && <CancelIcon />}
                   onClick={() => navigate('/cursos')}
                   fullWidth={isMobile}
-                  size={isMobile ? "small" : "medium"}
+                  size={isMobile ? 'small' : 'medium'}
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
-                  variant="contained" 
+                <Button
+                  type="submit"
+                  variant="contained"
                   color="primary"
                   startIcon={!isMobile && <SaveIcon />}
                   disabled={loading}
                   fullWidth={isMobile}
-                  size={isMobile ? "small" : "medium"}
+                  size={isMobile ? 'small' : 'medium'}
                 >
                   {loading ? 'Salvando...' : 'Salvar'}
                 </Button>
