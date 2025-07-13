@@ -61,11 +61,11 @@ const schema = yup.object().shape({
   status: yup.string().oneOf(['active', 'inactive']).required('Status é obrigatório'),
   bio: yup.string().required('Biografia é obrigatória'),
   education: yup.string().required('Formação acadêmica é obrigatória'),
-  specializations: yup.array().of(yup.string()).default([]),
+  specializations: yup.array().of(yup.string()).required(),
   address: yup.object().shape({
     street: yup.string().required('Rua é obrigatória'),
     number: yup.string().required('Número é obrigatório'),
-    complement: yup.string().default(''),
+    complement: yup.string().optional().nullable(),
     district: yup.string().required('Bairro é obrigatório'),
     city: yup.string().required('Cidade é obrigatória'),
     state: yup.string().required('Estado é obrigatório'),
@@ -84,7 +84,7 @@ interface TeacherFormData {
   address: {
     street: string;
     number: string;
-    complement?: string;
+    complement: string | null;
     district: string;
     city: string;
     state: string;
@@ -102,14 +102,14 @@ interface TeacherFormData {
   documents?: Document[];
 }
 
-const initialFormState = {
+const initialFormState: TeacherFormData = {
   fullName: '',
   cpf: '',
   birthDate: '',
   address: {
     street: '',
     number: '',
-    complement: '',
+    complement: null,
     district: '',
     city: '',
     state: '',
@@ -216,9 +216,9 @@ const FormProfessor: React.FC = () => {
   // Adicionar nova especialização
   const handleAddSpecialization = () => {
     if (newSpecialization.trim()) {
-      const currentSpecializations = watchSpecializations;
+      const currentSpecializations = watchSpecializations as string[];
       if (!currentSpecializations.includes(newSpecialization)) {
-        setValue('specializations', [...currentSpecializations, newSpecialization]);
+        setValue('specializations', [...currentSpecializations, newSpecialization] as string[]);
       }
       setNewSpecialization('');
     }
@@ -226,10 +226,10 @@ const FormProfessor: React.FC = () => {
   
   // Remover especialização
   const handleRemoveSpecialization = (specializationToDelete: string) => {
-    const currentSpecializations = watchSpecializations;
+    const currentSpecializations = watchSpecializations as string[];
     setValue(
       'specializations',
-      currentSpecializations.filter((spec) => spec !== specializationToDelete)
+      currentSpecializations.filter((spec) => spec !== specializationToDelete) as string[]
     );
   };
   

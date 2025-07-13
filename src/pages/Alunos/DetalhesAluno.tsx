@@ -1,42 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Divider,
-  Button,
-  Tabs,
-  Tab,
-  Card,
-  CardContent,
-  CardHeader,
-  IconButton,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  Avatar,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+  Box, Typography, Tabs, Tab, Card, CardContent, CardHeader, 
+  Divider, Grid, Paper, List, ListItem, ListItemText, IconButton, 
+  Table, TableHead, TableRow, TableCell, TableContainer, TableBody, 
+  Chip, Button, Alert, Avatar, CircularProgress
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  ArrowBack as ArrowBackIcon,
-  School as SchoolIcon,
-  Assignment as AssignmentIcon,
-  CardMembership as CertificateIcon,
-  PictureAsPdf as PdfIcon,
-  CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PersonIcon from '@mui/icons-material/Person';
+import ClassIcon from '@mui/icons-material/Class';
+import SchoolIcon from '@mui/icons-material/School';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { WorkspacePremium as CertificateIcon } from '@mui/icons-material';
+import { PictureAsPdf as PdfIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Cancel as CancelIcon } from '@mui/icons-material';
+import { CheckCircle as ActiveIcon } from '@mui/icons-material';
+import { Cancel as InactiveIcon } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { fetchStudentById } from '../../store/slices/studentsSlice';
 import { fetchCourses } from '../../store/slices/coursesSlice';
@@ -72,26 +55,26 @@ function a11yProps(index: number) {
 
 const DetalhesAluno: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const dispatch = useAppDispatch();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   
-  const { currentStudent, loading: studentLoading } = useAppSelector(
-    (state) => state.students
+  const { currentStudent, loading: studentLoading } = useSelector(
+    (state: RootState) => state.students
   );
-  const { courses, loading: coursesLoading } = useAppSelector(
-    (state) => state.courses
+  const { courses, loading: coursesLoading } = useSelector(
+    (state: RootState) => state.courses
   );
-  const { enrollments, loading: enrollmentsLoading } = useAppSelector(
-    (state) => state.enrollments
+  const { enrollments, loading: enrollmentsLoading } = useSelector(
+    (state: RootState) => state.enrollments
   );
   
   const [tabValue, setTabValue] = useState(0);
   
   useEffect(() => {
     if (id) {
-      dispatch(fetchStudentById(Number(id)));
-      dispatch(fetchCourses());
-      dispatch(fetchEnrollmentsByStudent(Number(id)));
+      dispatch(fetchStudentById(Number(id)) as any);
+      dispatch(fetchCourses() as any);
+      dispatch(fetchEnrollmentsByStudent(Number(id)) as any);
     }
   }, [dispatch, id]);
   
@@ -138,13 +121,13 @@ const DetalhesAluno: React.FC = () => {
   }
   
   // Find student's enrollments
-  const studentEnrollments = enrollments.filter(
-    (enrollment) => enrollment.studentId === currentStudent.id
-  );
+  const studentEnrollments = enrollments.filter((enrollment) => enrollment.studentId === Number(id));
+  const activeEnrollments = studentEnrollments.filter((enrollment) => enrollment.status === 'active');
+  const courseIds = activeEnrollments.map((enrollment) => enrollment.courseId);
   
-  // Get courses student is enrolled in
-  const enrolledCourses = courses.filter((course) =>
-    studentEnrollments.some((enrollment) => enrollment.courseId === course.id)
+  // Obter todos os cursos em que o aluno está ou esteve matriculado (para certificados)
+  const enrolledCourses = courses.filter(course => 
+    studentEnrollments.some(enrollment => enrollment.courseId === course.id)
   );
   
   return (
@@ -258,6 +241,12 @@ const DetalhesAluno: React.FC = () => {
               icon={<CertificateIcon />}
               iconPosition="start"
               {...a11yProps(3)}
+            />
+            <Tab
+              label="Emissão de Certificados"
+              icon={<PdfIcon />}
+              iconPosition="start"
+              {...a11yProps(4)}
             />
           </Tabs>
         </Box>
@@ -581,6 +570,101 @@ const DetalhesAluno: React.FC = () => {
               Este aluno não possui certificados emitidos.
             </Typography>
           )}
+        </TabPanel>
+
+        {/* Tab de Emissão de Certificados */}
+        <TabPanel value={tabValue} index={4}>
+          <Card>
+            <CardHeader title="Emissão de Novos Certificados" />
+            <Divider />
+            <CardContent>
+              {enrolledCourses.length > 0 ? (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Selecione o curso para emitir o certificado:
+                  </Typography>
+                  <Grid container spacing={3}>
+                    {enrolledCourses.map((course) => {
+                      const enrollment = studentEnrollments.find((e) => e.courseId === course.id);
+                      const alreadyHasCertificate = currentStudent.certificates?.some(cert => cert.courseId === course.id);
+                      const canEmitCertificate = enrollment?.status === 'completed';
+                      
+                      return (
+                        <Grid item xs={12} sm={6} md={4} key={`emit-cert-${course.id}`}>
+                          <Card variant="outlined" sx={{
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            opacity: canEmitCertificate ? 1 : 0.7
+                          }}>
+                            <CardHeader
+                              title={course.name}
+                              subheader={`Status: ${enrollment ? (
+                                enrollment.status === 'active' ? 'Cursando' : 
+                                enrollment.status === 'completed' ? 'Concluído' : 'Cancelado'
+                              ) : 'Não matriculado'}`}
+                            />
+                            <Divider />
+                            <CardContent sx={{ flexGrow: 1 }}>
+                              <Typography variant="body2" color="text.secondary" paragraph>
+                                {course.description.substring(0, 100)}{course.description.length > 100 ? '...' : ''}
+                              </Typography>
+                              
+                              {/* Status do certificado */}
+                              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+                                {alreadyHasCertificate ? (
+                                  <Chip 
+                                    icon={<CheckCircleIcon />} 
+                                    label="Certificado já emitido" 
+                                    color="success" 
+                                    variant="outlined" 
+                                  />
+                                ) : canEmitCertificate ? (
+                                  <Chip 
+                                    icon={<CheckCircleIcon />} 
+                                    label="Elegível para certificado" 
+                                    color="primary" 
+                                    variant="outlined" 
+                                  />
+                                ) : (
+                                  <Chip 
+                                    icon={<CancelIcon />} 
+                                    label="Curso não concluído" 
+                                    color="error" 
+                                    variant="outlined" 
+                                  />
+                                )}
+                              </Box>
+                            </CardContent>
+                            <Divider />
+                            <Box sx={{ p: 2 }}>
+                              <Button 
+                                variant="contained" 
+                                color="primary" 
+                                fullWidth
+                                startIcon={<PdfIcon />}
+                                disabled={!canEmitCertificate || alreadyHasCertificate}
+                                onClick={() => {
+                                  // Lógica para emitir certificado aqui
+                                  alert(`Certificado para o curso ${course.name} será emitido`)
+                                }}
+                              >
+                                {alreadyHasCertificate ? 'Certificado Emitido' : 'Emitir Certificado'}
+                              </Button>
+                            </Box>
+                          </Card>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                </Box>
+              ) : (
+                <Alert severity="info">
+                  Este aluno não está matriculado em nenhum curso. A emissão de certificados só é possível para cursos concluídos.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </TabPanel>
       </Box>
     </Box>
