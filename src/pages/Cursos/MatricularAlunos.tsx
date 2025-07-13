@@ -40,6 +40,7 @@ import { fetchStudents } from '../../store/slices/studentsSlice';
 import { fetchEnrollmentsByCourse, createEnrollment } from '../../store/slices/enrollmentsSlice';
 import { Course, Student, EnrollmentFull } from '../../types';
 import moment from 'moment';
+import { formatDateToBR } from '../../utils/masks';
 
 const MatricularAlunos: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -161,10 +162,8 @@ const MatricularAlunos: React.FC = () => {
     }
   };
 
-  // Função para formatar a data
-  const formatDate = (dateString: string) => {
-    return moment(dateString).format('DD/MM/YYYY');
-  };
+  // Usando a função global de formatação de data
+  const formatDate = formatDateToBR;
 
   if (courseLoading || studentsLoading) {
     return (

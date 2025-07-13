@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatDateToBR } from '../../utils/masks';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -616,7 +617,7 @@ const DetalhesCurso: React.FC = () => {
                               fontSize: { sm: '0.8rem', md: '0.875rem' },
                             }}
                           >
-                            {enrollment.enrollmentDate}
+                            {formatDateToBR(enrollment.enrollmentDate)}
                           </TableCell>
                           <TableCell
                             sx={{ padding: { xs: '8px 4px', sm: '16px' } }}

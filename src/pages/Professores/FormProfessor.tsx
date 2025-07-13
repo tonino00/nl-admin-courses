@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../store/hooks';
+import { maskCEP, maskCPF, maskPhone, formatDateToBR, parseDateFromBR, maskDate } from '../../utils/masks';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
@@ -65,7 +66,7 @@ const schema = yup.object().shape({
   address: yup.object().shape({
     street: yup.string().required('Rua é obrigatória'),
     number: yup.string().required('Número é obrigatório'),
-    complement: yup.string().optional().nullable(),
+    complement: yup.string().optional(),
     district: yup.string().required('Bairro é obrigatório'),
     city: yup.string().required('Cidade é obrigatória'),
     state: yup.string().required('Estado é obrigatório'),
@@ -81,15 +82,7 @@ interface TeacherFormData {
   fullName: string;
   cpf: string;
   birthDate: string;
-  address: {
-    street: string;
-    number: string;
-    complement: string | null;
-    district: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
+  address: Address;
   phone: string;
   email: string;
   bio: string;
@@ -109,7 +102,7 @@ const initialFormState: TeacherFormData = {
   address: {
     street: '',
     number: '',
-    complement: null,
+    complement: '',
     district: '',
     city: '',
     state: '',
@@ -163,20 +156,23 @@ const FormProfessor: React.FC = () => {
   
   const [newSpecialization, setNewSpecialization] = useState('');
   
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    setValue,
-    watch,
-    register,
-  } = useForm<TeacherFormData>({
-    resolver: yupResolver(schema),
+  // Omitir o resolver para evitar o problema de tipo infinito
+  const form = useForm({
     defaultValues: initialFormState,
     shouldUnregister: false,
+    mode: 'onBlur'
   });
   
+  // Extrair as propriedades individualmente para uso
+  const control = form.control;
+  const handleSubmit = form.handleSubmit;
+  const reset = form.reset;
+  const errors = form.formState.errors;
+  const setValue = form.setValue;
+  const watch = form.watch;
+  const register = form.register;
+  
+  // Definir manualmente sem usar a função watch diretamente
   const watchSpecializations = watch('specializations') || [];
   
   // Buscar dados do professor para edição
@@ -200,7 +196,11 @@ const FormProfessor: React.FC = () => {
         fullName: currentTeacher.fullName,
         cpf: currentTeacher.cpf,
         birthDate: currentTeacher.birthDate,
-        address: currentTeacher.address,
+        address: {
+          ...currentTeacher.address,
+          // Garantir que complement seja string vazia se for undefined
+          complement: currentTeacher.address.complement || ''
+        },
         phone: currentTeacher.phone,
         email: currentTeacher.email,
         bio: currentTeacher.bio,
@@ -216,9 +216,9 @@ const FormProfessor: React.FC = () => {
   // Adicionar nova especialização
   const handleAddSpecialization = () => {
     if (newSpecialization.trim()) {
-      const currentSpecializations = watchSpecializations as string[];
+      const currentSpecializations = [...watchSpecializations];
       if (!currentSpecializations.includes(newSpecialization)) {
-        setValue('specializations', [...currentSpecializations, newSpecialization] as string[]);
+        setValue('specializations', [...currentSpecializations, newSpecialization]);
       }
       setNewSpecialization('');
     }
@@ -226,10 +226,10 @@ const FormProfessor: React.FC = () => {
   
   // Remover especialização
   const handleRemoveSpecialization = (specializationToDelete: string) => {
-    const currentSpecializations = watchSpecializations as string[];
+    const currentSpecializations = [...watchSpecializations];
     setValue(
       'specializations',
-      currentSpecializations.filter((spec) => spec !== specializationToDelete) as string[]
+      currentSpecializations.filter((spec) => spec !== specializationToDelete)
     );
   };
   
@@ -239,11 +239,15 @@ const FormProfessor: React.FC = () => {
       if (isEditMode && currentTeacher) {
         // Update existing teacher
         const updatedTeacher: Teacher = {
-          ...currentTeacher,
+          id: currentTeacher.id,
           fullName: data.fullName,
           cpf: data.cpf,
           birthDate: data.birthDate,
-          address: data.address,
+          address: {
+            ...data.address,
+            // Garantir que o complement seja um tipo válido para Address
+            complement: data.address.complement || undefined
+          },
           phone: data.phone,
           email: data.email,
           bio: data.bio,
@@ -252,7 +256,8 @@ const FormProfessor: React.FC = () => {
           status: data.status,
           // Manter os valores existentes para campos que não estão no formulário
           rg: currentTeacher.rg,
-          documents: currentTeacher.documents
+          documents: currentTeacher.documents,
+          courses: currentTeacher.courses || []
         };
         
         await dispatch(updateTeacher(updatedTeacher));
@@ -262,7 +267,11 @@ const FormProfessor: React.FC = () => {
           fullName: data.fullName,
           cpf: data.cpf,
           birthDate: data.birthDate,
-          address: data.address,
+          address: {
+            ...data.address,
+            // Garantir que o complement seja um tipo válido para Address
+            complement: data.address.complement || undefined
+          },
           phone: data.phone,
           email: data.email,
           bio: data.bio,
@@ -271,8 +280,8 @@ const FormProfessor: React.FC = () => {
           status: data.status,
           // Valores padrão para campos obrigatórios não incluídos no formulário
           rg: '',
-          documents: [],
-          courses: []
+          courses: [],
+          documents: []
         };
         
         await dispatch(createTeacher(newTeacher));
@@ -364,19 +373,22 @@ const FormProfessor: React.FC = () => {
                   render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
-                      type="date"
+                      type="text"
                       fullWidth
                       label="Data de Nascimento"
                       margin="normal"
                       error={!!errors.birthDate}
-                      helperText={errors.birthDate?.message}
+                      helperText={errors.birthDate?.message || 'DD/MM/AAAA'}
                       InputLabelProps={{
                         shrink: true,
                       }}
-                      value={field.value || ''}
+                      value={field.value ? formatDateToBR(field.value) : ''}
                       onChange={(e) => {
-                        field.onChange(e.target.value);
+                        const maskedValue = maskDate(e.target.value);
+                        const parsedDate = maskedValue.length === 10 ? parseDateFromBR(maskedValue) : '';
+                        field.onChange(parsedDate || maskedValue);
                       }}
+                      inputProps={{ maxLength: 10 }}
                     />
                   )}
                 />

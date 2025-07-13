@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatDateToBR } from '../../utils/masks';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -222,7 +223,7 @@ const DetalhesProfessor: React.FC = () => {
                 <TableBody>
                   <TableRow>
                     <TableCell>{currentTeacher.cpf}</TableCell>
-                    <TableCell>{new Date(currentTeacher.birthDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateToBR(currentTeacher.birthDate)}</TableCell>
                     <TableCell>{currentTeacher.phone}</TableCell>
                     <TableCell>{currentTeacher.email}</TableCell>
                   </TableRow>

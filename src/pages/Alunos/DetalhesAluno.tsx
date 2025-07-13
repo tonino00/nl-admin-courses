@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatDateToBR } from '../../utils/masks';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -199,7 +200,7 @@ const DetalhesAluno: React.FC = () => {
                     <TableCell>{currentStudent.cpf}</TableCell>
                     <TableCell>{currentStudent.rg}</TableCell>
                     <TableCell>{currentStudent.mothersName}</TableCell>
-                    <TableCell>{new Date(currentStudent.birthDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateToBR(currentStudent.birthDate)}</TableCell>
                     <TableCell>{currentStudent.phone}</TableCell>
                     <TableCell>{currentStudent.email}</TableCell>
                   </TableRow>
@@ -358,7 +359,7 @@ const DetalhesAluno: React.FC = () => {
                     <Card>
                       <CardHeader
                         title={course.name}
-                        subheader={`Matrícula: ${enrollment ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'}`}
+                        subheader={`Matrícula: ${enrollment ? formatDateToBR(enrollment.enrollmentDate) : 'N/A'}`}
                         action={
                           <Chip
                             label={enrollment?.status === 'active' ? 'Cursando' : enrollment?.status === 'completed' ? 'Concluído' : 'Cancelado'}
@@ -422,7 +423,7 @@ const DetalhesAluno: React.FC = () => {
                                         {enrollment.attendance.map((record, index) => (
                                           <TableRow key={index}>
                                             <TableCell>
-                                              {new Date(record.date).toLocaleDateString()}
+                                              {formatDateToBR(record.date)}
                                             </TableCell>
                                             <TableCell align="right">
                                               <Chip
@@ -530,7 +531,7 @@ const DetalhesAluno: React.FC = () => {
                     <Card>
                       <CardHeader
                         title={course ? course.name : `Curso ID ${certificate.courseId}`}
-                        subheader={`Emitido em: ${new Date(certificate.issueDate).toLocaleDateString()}`}
+                        subheader={`Emitido em: ${formatDateToBR(certificate.issueDate)}`}
                         action={
                           <IconButton color="primary" size="small">
                             <PdfIcon />

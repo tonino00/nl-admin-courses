@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { formatDateToBR } from '../../utils/masks';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import {
   Box,
@@ -195,7 +196,7 @@ const Dashboard: React.FC = () => {
                                     >
                                       {course?.name}
                                     </Typography>
-                                    {` - Matrícula em ${new Date(enrollment.enrollmentDate).toLocaleDateString()}`}
+                                    {` - Matrícula em ${formatDateToBR(enrollment.enrollmentDate)}`}
                                   </>
                                 }
                               />

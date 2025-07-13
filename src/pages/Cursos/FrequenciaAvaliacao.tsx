@@ -48,6 +48,7 @@ import {
   PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import moment from 'moment';
+import { formatDateToBR } from '../../utils/masks';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchCourseById } from '../../store/slices/coursesSlice';
 import { fetchEnrollmentsByCourse, updateEnrollment } from '../../store/slices/enrollmentsSlice';
@@ -609,12 +610,23 @@ const FrequenciaAvaliacao: React.FC = () => {
               <Grid item xs={12} md={4} sm={6}>
                 <TextField
                   label="Data da Aula"
-                  type="date"
-                  value={attendanceDate}
-                  onChange={handleAttendanceDateChange}
+                  type="text"
+                  value={formatDateToBR(attendanceDate)}
+                  onChange={(e) => {
+                    // Aplicar máscara de data brasileira
+                    const maskedValue = e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d{2})(\d{4})$/, '$1/$2/$3');
+                    if (maskedValue.length === 10) {
+                      // Converter para ISO quando tiver formato completo
+                      const [day, month, year] = maskedValue.split('/');
+                      const isoDate = `${year}-${month}-${day}`;
+                      handleAttendanceDateChange({ target: { value: isoDate } } as React.ChangeEvent<HTMLInputElement>);
+                    }
+                  }}
                   InputLabelProps={{ shrink: true }}
+                  helperText="DD/MM/AAAA"
                   fullWidth
                   size={isMobile ? "small" : "medium"}
+                  inputProps={{ maxLength: 10 }}
                 />
               </Grid>
               <Grid item xs={12} md={8} sm={6} sx={{ 
@@ -645,7 +657,7 @@ const FrequenciaAvaliacao: React.FC = () => {
                   {savedAttendanceDates.map((date) => {
                     // Separar as props para evitar o warning de key em spread operator
                     const chipProps = {
-                      label: moment(date).format('DD/MM/YYYY'),
+                      label: formatDateToBR(date),
                       color: date === attendanceDate ? "primary" : "default",
                       onClick: () => handleSelectDate(date),
                       variant: date === attendanceDate ? "filled" : "outlined" as "filled" | "outlined",
@@ -865,12 +877,24 @@ const FrequenciaAvaliacao: React.FC = () => {
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Data da Avaliação"
-                type="date"
-                value={evaluationDate}
-                onChange={(e) => setEvaluationDate(e.target.value)}
+                type="text"
+                value={formatDateToBR(evaluationDate)}
+                onChange={(e) => {
+                  const maskedValue = e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d{2})(\d{4})$/, '$1/$2/$3');
+                  if (maskedValue.length === 10) {
+                    const [day, month, year] = maskedValue.split('/');
+                    const isoDate = `${year}-${month}-${day}`;
+                    setEvaluationDate(isoDate);
+                  } else {
+                    // Se não for um formato completo, manter a máscara mas não atualizar a data
+                    e.target.value = maskedValue;
+                  }
+                }}
                 fullWidth
+                helperText="DD/MM/AAAA"
                 InputLabelProps={{ shrink: true }}
                 size={isMobile ? "small" : "medium"}
+                inputProps={{ maxLength: 10 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

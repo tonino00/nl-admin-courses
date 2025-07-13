@@ -341,13 +341,23 @@
         }
       ],
       "averageGrade": 7
+    },
+    {
+      "studentId": 1,
+      "courseId": 2,
+      "studentName": "João Silva",
+      "enrollmentDate": "2025-07-13",
+      "status": "active",
+      "attendance": [],
+      "evaluations": [],
+      "id": 5
     }
   ],
   "users": [
     {
       "id": 1,
       "username": "admin",
-      "password": "admin123",
+      "password": "admin@0040",
       "name": "Administrador",
       "role": "admin"
     },

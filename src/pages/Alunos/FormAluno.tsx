@@ -37,6 +37,7 @@ import {
   clearCurrentStudent,
 } from '../../store/slices/studentsSlice';
 import { Student, Address } from '../../types';
+import { maskCEP, maskCPF, maskPhone, formatDateToBR, parseDateFromBR, maskDate } from '../../utils/masks';
 
 // Validação com Yup
 const schema = yup.object().shape({
@@ -321,18 +322,21 @@ const FormAluno: React.FC = () => {
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      type="date"
+                      type="text"
                       fullWidth
                       label="Data de Nascimento"
                       error={!!errors.birthDate}
-                      helperText={errors.birthDate?.message}
+                      helperText={errors.birthDate?.message || 'DD/MM/AAAA'}
                       InputLabelProps={{
                         shrink: true,
                       }}
-                      value={field.value || ''}
+                      value={field.value ? formatDateToBR(field.value) : ''}
                       onChange={(e) => {
-                        field.onChange(e.target.value);
+                        const maskedValue = maskDate(e.target.value);
+                        const parsedDate = maskedValue.length === 10 ? parseDateFromBR(maskedValue) : '';
+                        field.onChange(parsedDate || maskedValue);
                       }}
+                      inputProps={{ maxLength: 10 }}
                     />
                   )}
                 />
