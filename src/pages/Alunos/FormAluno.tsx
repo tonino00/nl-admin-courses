@@ -37,7 +37,13 @@ import {
   clearCurrentStudent,
 } from '../../store/slices/studentsSlice';
 import { Student, Address } from '../../types';
-import { maskCEP, maskCPF, maskPhone, formatDateToBR, parseDateFromBR, maskDate } from '../../utils/masks';
+import {
+  maskCPF,
+  maskPhone,
+  formatDateToBR,
+  parseDateFromBR,
+  maskDate,
+} from '../../utils/masks';
 
 // Validação com Yup
 const schema = yup.object().shape({
@@ -46,7 +52,10 @@ const schema = yup.object().shape({
   cpf: yup
     .string()
     .required('CPF é obrigatório')
-    .matches(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'Formato de CPF inválido (000.000.000-00)'),
+    .matches(
+      /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+      'Formato de CPF inválido (000.000.000-00)'
+    ),
   rg: yup.string().required('RG é obrigatório'),
   birthDate: yup.string().required('Data de nascimento é obrigatória'),
   phone: yup
@@ -57,7 +66,10 @@ const schema = yup.object().shape({
       'Formato de telefone inválido ((00) 00000-0000)'
     ),
   email: yup.string().email('Email inválido').required('Email é obrigatório'),
-  status: yup.string().oneOf(['active', 'inactive']).required('Status é obrigatório'),
+  status: yup
+    .string()
+    .oneOf(['active', 'inactive'])
+    .required('Status é obrigatório'),
   address: yup.object().shape({
     street: yup.string().required('Rua é obrigatória'),
     number: yup.string().required('Número é obrigatório'),
@@ -71,7 +83,10 @@ const schema = yup.object().shape({
   }),
 });
 
-type StudentFormData = Omit<Student, 'id' | 'documents' | 'enrollments' | 'grades' | 'certificates'> & {
+type StudentFormData = Omit<
+  Student,
+  'id' | 'documents' | 'enrollments' | 'grades' | 'certificates'
+> & {
   id?: number;
 };
 
@@ -98,16 +113,16 @@ const initialFormState: StudentFormData = {
 const FormAluno: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
-  
+
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { currentStudent, loading, error } = useAppSelector(
     (state) => state.students
   );
-  
+
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  
+
   const {
     control,
     handleSubmit,
@@ -118,18 +133,18 @@ const FormAluno: React.FC = () => {
     resolver: yupResolver(schema),
     defaultValues: initialFormState,
   });
-  
+
   // Buscar dados do aluno para edição
   useEffect(() => {
     if (isEditMode && id) {
       dispatch(fetchStudentById(Number(id)));
     }
-    
+
     return () => {
       dispatch(clearCurrentStudent());
     };
   }, [dispatch, id, isEditMode]);
-  
+
   // Preencher formulário com dados do aluno em modo de edição
   useEffect(() => {
     if (isEditMode && currentStudent) {
@@ -145,9 +160,9 @@ const FormAluno: React.FC = () => {
         email: currentStudent.email,
         status: currentStudent.status,
       };
-      
+
       reset(formData);
-      
+
       // Populate document previews if any
       if (currentStudent.documents && currentStudent.documents.length > 0) {
         const documentUrls = currentStudent.documents.map((doc) => doc.url);
@@ -155,7 +170,7 @@ const FormAluno: React.FC = () => {
       }
     }
   }, [currentStudent, isEditMode, reset]);
-  
+
   // Configuração do Dropzone para upload de documentos
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -164,7 +179,7 @@ const FormAluno: React.FC = () => {
     },
     onDrop: (acceptedFiles) => {
       setUploadedFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
-      
+
       // Create preview URLs
       const newPreviewUrls = acceptedFiles.map((file) =>
         URL.createObjectURL(file)
@@ -172,7 +187,7 @@ const FormAluno: React.FC = () => {
       setPreviewUrls((prevUrls) => [...prevUrls, ...newPreviewUrls]);
     },
   });
-  
+
   // Submeter formulário
   const onSubmit = async (data: StudentFormData) => {
     try {
@@ -182,7 +197,7 @@ const FormAluno: React.FC = () => {
           ...currentStudent,
           ...data,
         };
-        
+
         await dispatch(updateStudent(updatedStudent));
       } else {
         // Create new student
@@ -193,20 +208,20 @@ const FormAluno: React.FC = () => {
           grades: [],
           certificates: [],
         };
-        
+
         await dispatch(createStudent(newStudent as Omit<Student, 'id'>));
       }
-      
+
       navigate('/alunos');
     } catch (error) {
       console.error('Erro ao salvar aluno:', error);
     }
   };
-  
+
   const handleCancel = () => {
     navigate('/alunos');
   };
-  
+
   // Remover preview de arquivo
   const handleRemoveFile = (index: number) => {
     setUploadedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
@@ -216,26 +231,35 @@ const FormAluno: React.FC = () => {
       return prevUrls.filter((_, i) => i !== index);
     });
   };
-  
+
   return (
     <Box>
       <Box display="flex" alignItems="center" mb={3}>
-        <IconButton color="primary" onClick={() => navigate('/alunos')} sx={{ mr: 1 }}>
+        <IconButton
+          color="primary"
+          onClick={() => navigate('/alunos')}
+          sx={{ mr: 1 }}
+        >
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4">
           {isEditMode ? 'Editar Aluno' : 'Novo Aluno'}
         </Typography>
       </Box>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-      
+
       {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" height="300px">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="300px"
+        >
           <CircularProgress />
         </Box>
       ) : (
@@ -249,7 +273,7 @@ const FormAluno: React.FC = () => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Controller
                   name="fullName"
@@ -265,7 +289,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Controller
                   name="mothersName"
@@ -281,7 +305,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Controller
                   name="cpf"
@@ -298,7 +322,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Controller
                   name="rg"
@@ -314,7 +338,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Controller
                   name="birthDate"
@@ -333,7 +357,10 @@ const FormAluno: React.FC = () => {
                       value={field.value ? formatDateToBR(field.value) : ''}
                       onChange={(e) => {
                         const maskedValue = maskDate(e.target.value);
-                        const parsedDate = maskedValue.length === 10 ? parseDateFromBR(maskedValue) : '';
+                        const parsedDate =
+                          maskedValue.length === 10
+                            ? parseDateFromBR(maskedValue)
+                            : '';
                         field.onChange(parsedDate || maskedValue);
                       }}
                       inputProps={{ maxLength: 10 }}
@@ -341,7 +368,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Controller
                   name="phone"
@@ -358,7 +385,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Controller
                   name="email"
@@ -375,7 +402,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Controller
                   name="status"
@@ -391,7 +418,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               {/* Endereço */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
@@ -399,7 +426,7 @@ const FormAluno: React.FC = () => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Controller
                   name="address.street"
@@ -415,7 +442,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={2}>
                 <Controller
                   name="address.number"
@@ -431,21 +458,17 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Controller
                   name="address.complement"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Complemento"
-                      fullWidth
-                    />
+                    <TextField {...field} label="Complemento" fullWidth />
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Controller
                   name="address.district"
@@ -461,7 +484,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Controller
                   name="address.city"
@@ -477,7 +500,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={2}>
                 <Controller
                   name="address.state"
@@ -493,7 +516,7 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={2}>
                 <Controller
                   name="address.zipCode"
@@ -510,14 +533,14 @@ const FormAluno: React.FC = () => {
                   )}
                 />
               </Grid>
-              
+
               {/* Upload de Documentos */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                   Documentos
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                
+
                 <Box
                   {...getRootProps()}
                   sx={{
@@ -539,7 +562,7 @@ const FormAluno: React.FC = () => {
                     Documentos, foto, comprovantes (JPG, PNG, PDF)
                   </Typography>
                 </Box>
-                
+
                 {previewUrls.length > 0 && (
                   <Grid container spacing={2} sx={{ mt: 2 }}>
                     {previewUrls.map((url, index) => (
@@ -595,7 +618,7 @@ const FormAluno: React.FC = () => {
                   </Grid>
                 )}
               </Grid>
-              
+
               {/* Buttons */}
               <Grid item xs={12} sx={{ mt: 3 }}>
                 <Box display="flex" justifyContent="flex-end" gap={2}>
@@ -613,11 +636,7 @@ const FormAluno: React.FC = () => {
                     startIcon={<SaveIcon />}
                     disabled={loading}
                   >
-                    {loading ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      'Salvar'
-                    )}
+                    {loading ? <CircularProgress size={24} /> : 'Salvar'}
                   </Button>
                 </Box>
               </Grid>
