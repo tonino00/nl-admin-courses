@@ -31,14 +31,27 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
   authService.logout();
 });
 
-export const checkAuthStatus = createAsyncThunk('auth/checkStatus', async () => {
-  const isAuth = authService.isAuthenticated();
-  if (isAuth) {
-    const user = authService.getCurrentUser();
-    const token = localStorage.getItem('token');
-    return { user, token };
+export const checkAuthStatus = createAsyncThunk('auth/checkStatus', async (_, { rejectWithValue }) => {
+  try {
+    const isAuth = authService.isAuthenticated();
+    if (isAuth) {
+      const user = authService.getCurrentUser();
+      const token = localStorage.getItem('token');
+      
+      if (!user || !token) {
+        // Se temos token válido mas não conseguimos recuperar o usuário, limpamos o storage
+        authService.logout();
+        return rejectWithValue('Sessão inválida');
+      }
+      
+      return { user, token };
+    }
+    return rejectWithValue('Não autenticado');
+  } catch (error) {
+    // Em caso de erro, limpar o storage para evitar problemas
+    authService.logout();
+    return rejectWithValue('Erro ao verificar autenticação');
   }
-  return { user: null, token: null };
 });
 
 // Auth slice
@@ -77,14 +90,31 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       })
       // Check auth status
-      .addCase(
-        checkAuthStatus.fulfilled,
-        (state, action: PayloadAction<{ user: User | null; token: string | null }>) => {
+      .addCase(checkAuthStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(checkAuthStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        // Se temos os dados do usuário e token, definimos como autenticado
+        if (action.payload && action.payload.user && action.payload.token) {
           state.user = action.payload.user;
           state.token = action.payload.token;
-          state.isAuthenticated = !!action.payload.user;
+          state.isAuthenticated = true;
+        } else {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
         }
-      );
+      })
+      .addCase(checkAuthStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = action.payload as string || 'Falha na autenticação';
+      });
   },
 });
 

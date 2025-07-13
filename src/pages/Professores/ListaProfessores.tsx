@@ -113,15 +113,18 @@ const ListaProfessores: React.FC = () => {
             return <Chip label="Sem especialização" size="small" color="default" />;
           }
 
-          return teacher.specializations.map((spec: string) => (
-            <Chip 
-              key={spec} 
-              label={spec} 
-              size="small" 
-              color="primary" 
-              sx={{ marginRight: 0.5, marginBottom: 0.5 }} 
-            />
-          ));
+          return teacher.specializations.map((spec: string) => {
+            // Criar o objeto props sem a key para evitar o warning
+            const chipProps = {
+              label: spec,
+              size: "small" as const,
+              color: "primary" as const,
+              sx: { marginRight: 0.5, marginBottom: 0.5 }
+            };
+            
+            // Passar a key separadamente e espalhar o resto das props
+            return <Chip key={spec} {...chipProps} />;
+          });
         };
 
         return (

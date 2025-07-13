@@ -85,7 +85,8 @@ export interface EnrollmentFull {
   enrollmentDate: string;
   status: 'active' | 'completed' | 'canceled';
   attendance: Attendance[];
-  evaluations?: Evaluation[];
+  evaluations: Evaluation[];
+  averageGrade?: number; // Média das avaliações do aluno
 }
 
 // Evaluation Type

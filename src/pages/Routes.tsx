@@ -19,6 +19,7 @@ import DetalhesAluno from './Alunos/DetalhesAluno';
 import ListaProfessores from './Professores/ListaProfessores';
 import FormProfessor from './Professores/FormProfessor';
 import DetalhesProfessor from './Professores/DetalhesProfessor';
+import CursosProfessor from './Professores/CursosProfessor';
 
 // Cursos
 import ListaCursos from './Cursos/ListaCursos';
@@ -45,8 +46,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  // Verificar status de autenticação ao iniciar o componente
   useEffect(() => {
-    dispatch(checkAuthStatus());
+    const verifyAuth = async () => {
+      try {
+        // Verifica autenticação de forma assíncrona
+        await dispatch(checkAuthStatus()).unwrap();
+      } catch (error) {
+        // Já tratamos o erro no reducer
+        console.log('Erro de autenticação:', error);
+      }
+    };
+    
+    verifyAuth();
   }, [dispatch]);
 
   useEffect(() => {
@@ -95,6 +107,7 @@ const Routes = () => {
           <Route path="cadastro" element={<FormProfessor />} />
           <Route path="editar/:id" element={<FormProfessor />} />
           <Route path=":id" element={<DetalhesProfessor />} />
+          <Route path=":id/cursos" element={<CursosProfessor />} />
         </Route>
 
         {/* Rotas de Cursos */}

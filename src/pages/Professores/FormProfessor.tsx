@@ -61,11 +61,11 @@ const schema = yup.object().shape({
   status: yup.string().oneOf(['active', 'inactive']).required('Status é obrigatório'),
   bio: yup.string().required('Biografia é obrigatória'),
   education: yup.string().required('Formação acadêmica é obrigatória'),
-  specializations: yup.array().of(yup.string()),
+  specializations: yup.array().of(yup.string()).default([]),
   address: yup.object().shape({
     street: yup.string().required('Rua é obrigatória'),
     number: yup.string().required('Número é obrigatório'),
-    complement: yup.string(),
+    complement: yup.string().default(''),
     district: yup.string().required('Bairro é obrigatório'),
     city: yup.string().required('Cidade é obrigatória'),
     state: yup.string().required('Estado é obrigatório'),
@@ -172,17 +172,12 @@ const FormProfessor: React.FC = () => {
     watch,
     register,
   } = useForm<TeacherFormData>({
-    resolver: yupResolver(schema) as any,
-    defaultValues: initialFormState as TeacherFormData,
-    // Registrar campos que podem não estar no schema
+    resolver: yupResolver(schema),
+    defaultValues: initialFormState,
     shouldUnregister: false,
   });
   
-  // Registrar o campo specializations explicitamente
-  register('specializations');
-  register('address.complement');
-  
-  const watchSpecializations = watch('specializations') as string[] || [];
+  const watchSpecializations = watch('specializations') || [];
   
   // Buscar dados do professor para edição
   useEffect(() => {
@@ -221,9 +216,9 @@ const FormProfessor: React.FC = () => {
   // Adicionar nova especialização
   const handleAddSpecialization = () => {
     if (newSpecialization.trim()) {
-      const currentSpecializations = (watchSpecializations || []) as string[];
+      const currentSpecializations = watchSpecializations;
       if (!currentSpecializations.includes(newSpecialization)) {
-        setValue('specializations', [...currentSpecializations, newSpecialization] as any);
+        setValue('specializations', [...currentSpecializations, newSpecialization]);
       }
       setNewSpecialization('');
     }
@@ -231,10 +226,10 @@ const FormProfessor: React.FC = () => {
   
   // Remover especialização
   const handleRemoveSpecialization = (specializationToDelete: string) => {
-    const currentSpecializations = (watchSpecializations || []) as string[];
+    const currentSpecializations = watchSpecializations;
     setValue(
-      'specializations' as any,
-      currentSpecializations.filter((spec) => spec !== specializationToDelete) as any
+      'specializations',
+      currentSpecializations.filter((spec) => spec !== specializationToDelete)
     );
   };
   

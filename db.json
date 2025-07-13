@@ -128,6 +128,11 @@
       ],
       "assignedCourses": [
         2
+      ],
+      "bio": "teste",
+      "education": "Licenciatura",
+      "specializations": [
+        "Artes"
       ]
     },
     {
@@ -243,7 +248,30 @@
         },
         {
           "date": "2023-02-13",
-          "present": false
+          "present": true
+        },
+        {
+          "date": "2025-07-13",
+          "present": true
+        },
+        {
+          "date": "2025-07-14",
+          "present": true
+        },
+        {
+          "date": "2025-07-17",
+          "present": true
+        }
+      ],
+      "evaluations": [
+        {
+          "id": 1752385996530,
+          "moduleId": 1,
+          "moduleName": "Fundamentos",
+          "evaluationType": "prova",
+          "evaluationDate": "2025-07-13",
+          "grade": 8.1,
+          "comments": ""
         }
       ]
     },
@@ -263,6 +291,56 @@
           "present": true
         }
       ]
+    },
+    {
+      "id": 3,
+      "studentId": 2,
+      "courseId": 2,
+      "enrollmentDate": "2025-07-13",
+      "status": "active",
+      "attendance": [
+        {
+          "date": "2025-07-13",
+          "present": true
+        },
+        {
+          "date": "2025-07-14",
+          "present": true
+        },
+        {
+          "date": "2025-07-11",
+          "present": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "studentId": 2,
+      "courseId": 1,
+      "enrollmentDate": "2025-07-13",
+      "status": "active",
+      "attendance": [
+        {
+          "date": "2025-07-14",
+          "present": true
+        },
+        {
+          "date": "2023-02-06",
+          "present": true
+        }
+      ],
+      "evaluations": [
+        {
+          "id": 1752388373467,
+          "moduleId": 1,
+          "moduleName": "Fundamentos",
+          "evaluationType": "prova",
+          "evaluationDate": "2025-07-13",
+          "grade": 7,
+          "comments": ""
+        }
+      ],
+      "averageGrade": 7
     }
   ],
   "users": [

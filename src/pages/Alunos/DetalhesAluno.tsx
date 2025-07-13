@@ -199,51 +199,30 @@ const DetalhesAluno: React.FC = () => {
               </Typography>
             </Box>
             
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  CPF
-                </Typography>
-                <Typography variant="body1">{currentStudent.cpf}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  RG
-                </Typography>
-                <Typography variant="body1">{currentStudent.rg}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Nome da Mãe
-                </Typography>
-                <Typography variant="body1">{currentStudent.mothersName}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Data de Nascimento
-                </Typography>
-                <Typography variant="body1">
-                  {new Date(currentStudent.birthDate).toLocaleDateString()}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Telefone
-                </Typography>
-                <Typography variant="body1">{currentStudent.phone}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1">{currentStudent.email}</Typography>
-              </Grid>
-            </Grid>
+            <Box sx={{ overflowX: 'auto', mt: 2 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>CPF</TableCell>
+                    <TableCell>RG</TableCell>
+                    <TableCell>Nome da Mãe</TableCell>
+                    <TableCell>Data de Nascimento</TableCell>
+                    <TableCell>Telefone</TableCell>
+                    <TableCell>Email</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>{currentStudent.cpf}</TableCell>
+                    <TableCell>{currentStudent.rg}</TableCell>
+                    <TableCell>{currentStudent.mothersName}</TableCell>
+                    <TableCell>{new Date(currentStudent.birthDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{currentStudent.phone}</TableCell>
+                    <TableCell>{currentStudent.email}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Box>
           </Grid>
         </Grid>
       </Paper>
@@ -290,62 +269,31 @@ const DetalhesAluno: React.FC = () => {
               <Card>
                 <CardHeader title="Endereço" />
                 <Divider />
-                <CardContent>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={8}>
-                      <Typography variant="body2" color="text.secondary">
-                        Rua
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentStudent.address.street}, {currentStudent.address.number}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">
-                        Complemento
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentStudent.address.complement || '-'}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">
-                        Bairro
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentStudent.address.district}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">
-                        Cidade
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentStudent.address.city}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <Typography variant="body2" color="text.secondary">
-                        Estado
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentStudent.address.state}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <Typography variant="body2" color="text.secondary">
-                        CEP
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentStudent.address.zipCode}
-                      </Typography>
-                    </Grid>
-                  </Grid>
+                <CardContent sx={{ overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Rua</TableCell>
+                        <TableCell>Número</TableCell>
+                        <TableCell>Complemento</TableCell>
+                        <TableCell>Bairro</TableCell>
+                        <TableCell>Cidade</TableCell>
+                        <TableCell>Estado</TableCell>
+                        <TableCell>CEP</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>{currentStudent.address.street}</TableCell>
+                        <TableCell>{currentStudent.address.number}</TableCell>
+                        <TableCell>{currentStudent.address.complement || '-'}</TableCell>
+                        <TableCell>{currentStudent.address.district}</TableCell>
+                        <TableCell>{currentStudent.address.city}</TableCell>
+                        <TableCell>{currentStudent.address.state}</TableCell>
+                        <TableCell>{currentStudent.address.zipCode}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </Grid>

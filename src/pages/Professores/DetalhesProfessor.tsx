@@ -18,6 +18,11 @@ import {
   Avatar,
   CircularProgress,
   List,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   ListItem,
   ListItemAvatar,
   ListItemText,
@@ -127,9 +132,20 @@ const DetalhesProfessor: React.FC = () => {
   }
   
   // Encontrar cursos ministrados pelo professor
-  const teacherCourses = courses.filter((course: Course) => 
-    currentTeacher?.courses?.includes(course.id)
-  );
+  // Verificamos tanto se o ID do professor está no curso quanto se o curso está listado no professor
+  const teacherCourses = courses.filter((course: Course) => {
+    // Verificação principal: o professor é o responsável pelo curso
+    const isTeacherOfCourse = course.teacherId === currentTeacher.id;
+    
+    // Verificação secundária: o curso está na lista de cursos do professor (se existir)
+    const isInTeacherCourses = currentTeacher?.courses?.includes(course.id);
+    
+    // Log para depuração
+    console.log(`Curso: ${course.name}, ID: ${course.id}, teacherId: ${course.teacherId}, Professor ID: ${currentTeacher.id}, Está na lista do professor: ${isInTeacherCourses}`);
+    
+    // Retorna verdadeiro se alguma das condições for verdadeira
+    return isTeacherOfCourse || isInTeacherCourses;
+  });
   
   return (
     <Box>
@@ -140,6 +156,15 @@ const DetalhesProfessor: React.FC = () => {
         <Typography variant="h4" flex={1}>
           Detalhes do Professor
         </Typography>
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<CourseIcon />}
+          onClick={() => navigate(`/professores/${id}/cursos`)}
+          sx={{ mr: 1 }}
+        >
+          Gerenciar Cursos
+        </Button>
         <Button
           variant="contained"
           color="primary"
@@ -184,56 +209,45 @@ const DetalhesProfessor: React.FC = () => {
               </Typography>
             </Box>
             
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  CPF
-                </Typography>
-                <Typography variant="body1">{currentTeacher.cpf}</Typography>
-              </Grid>
+            <Box sx={{ overflowX: 'auto', mt: 2 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>CPF</TableCell>
+                    <TableCell>Data de Nascimento</TableCell>
+                    <TableCell>Telefone</TableCell>
+                    <TableCell>Email</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>{currentTeacher.cpf}</TableCell>
+                    <TableCell>{new Date(currentTeacher.birthDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{currentTeacher.phone}</TableCell>
+                    <TableCell>{currentTeacher.email}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Box>
               
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Data de Nascimento
+            {currentTeacher.specializations && currentTeacher.specializations.length > 0 && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Especializações:
                 </Typography>
-                <Typography variant="body1">
-                  {new Date(currentTeacher.birthDate).toLocaleDateString()}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Telefone
-                </Typography>
-                <Typography variant="body1">{currentTeacher.phone}</Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1">{currentTeacher.email}</Typography>
-              </Grid>
-              
-              {currentTeacher.specializations && currentTeacher.specializations.length > 0 && (
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Especializações
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {currentTeacher.specializations.map((spec: string, index: number) => (
-                      <Chip
-                        key={index}
-                        label={spec}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                      />
-                    ))}
-                  </Box>
-                </Grid>
-              )}
-            </Grid>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {currentTeacher.specializations.map((spec: string, index: number) => (
+                    <Chip
+                      key={index}
+                      label={spec}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
           </Grid>
         </Grid>
       </Paper>
@@ -264,26 +278,29 @@ const DetalhesProfessor: React.FC = () => {
         {/* Tab de Informações Detalhadas */}
         <TabPanel value={tabValue} index={0}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card>
-                <CardHeader title="Formação Acadêmica" />
+                <CardHeader title="Informações Acadêmicas e Profissionais" />
                 <Divider />
-                <CardContent>
-                  <Typography>
-                    {currentTeacher.education}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader title="Biografia" />
-                <Divider />
-                <CardContent>
-                  <Typography>
-                    {currentTeacher.bio}
-                  </Typography>
+                <CardContent sx={{ overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Formação Acadêmica</TableCell>
+                        <TableCell>Biografia</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ whiteSpace: 'pre-wrap', verticalAlign: 'top', width: '50%' }}>
+                          {currentTeacher.education}
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: 'pre-wrap', verticalAlign: 'top', width: '50%' }}>
+                          {currentTeacher.bio}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </Grid>
@@ -292,62 +309,31 @@ const DetalhesProfessor: React.FC = () => {
               <Card>
                 <CardHeader title="Endereço" />
                 <Divider />
-                <CardContent>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={8}>
-                      <Typography variant="body2" color="text.secondary">
-                        Rua
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentTeacher.address.street}, {currentTeacher.address.number}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">
-                        Complemento
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentTeacher.address.complement || '-'}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">
-                        Bairro
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentTeacher.address.district}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">
-                        Cidade
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentTeacher.address.city}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <Typography variant="body2" color="text.secondary">
-                        Estado
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentTeacher.address.state}
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <Typography variant="body2" color="text.secondary">
-                        CEP
-                      </Typography>
-                      <Typography variant="body1">
-                        {currentTeacher.address.zipCode}
-                      </Typography>
-                    </Grid>
-                  </Grid>
+                <CardContent sx={{ overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Rua</TableCell>
+                        <TableCell>Número</TableCell>
+                        <TableCell>Complemento</TableCell>
+                        <TableCell>Bairro</TableCell>
+                        <TableCell>Cidade</TableCell>
+                        <TableCell>Estado</TableCell>
+                        <TableCell>CEP</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>{currentTeacher.address.street}</TableCell>
+                        <TableCell>{currentTeacher.address.number}</TableCell>
+                        <TableCell>{currentTeacher.address.complement || '-'}</TableCell>
+                        <TableCell>{currentTeacher.address.district}</TableCell>
+                        <TableCell>{currentTeacher.address.city}</TableCell>
+                        <TableCell>{currentTeacher.address.state}</TableCell>
+                        <TableCell>{currentTeacher.address.zipCode}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </Grid>
@@ -387,34 +373,24 @@ const DetalhesProfessor: React.FC = () => {
                         <Typography variant="subtitle1" gutterBottom>
                           Detalhes do curso:
                         </Typography>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Duração:
-                            </Typography>
-                            <Typography variant="body1">
-                              {course.workload} horas
-                            </Typography>
-                          </Grid>
-                          
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Vagas:
-                            </Typography>
-                            <Typography variant="body1">
-                              {course.availableSpots} vagas
-                            </Typography>
-                          </Grid>
-                          
-                          <Grid item xs={12}>
-                            <Typography variant="body2" color="text.secondary">
-                              Categoria:
-                            </Typography>
-                            <Typography variant="body1">
-                              {course.description.split(' ').slice(0, 2).join(' ')}
-                            </Typography>
-                          </Grid>
-                        </Grid>
+                        <Box sx={{ overflowX: 'auto' }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Duração</TableCell>
+                                <TableCell>Categoria</TableCell>
+                                <TableCell>Vagas</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell>{course.workload} horas</TableCell>
+                                <TableCell>{course.description.split(' ').slice(0, 2).join(' ')}</TableCell>
+                                <TableCell>{course.availableSpots} vagas</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </Box>
                       </Box>
                     </CardContent>
                   </Card>

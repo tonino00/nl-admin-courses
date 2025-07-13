@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -32,7 +32,8 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
-  Alert
+  Alert,
+  Chip
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -41,7 +42,10 @@ import {
   Check as CheckIcon,
   AssignmentTurnedIn as AssignmentIcon,
   CalendarToday as CalendarIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  ArrowBack as ArrowBackIcon,
+  Assessment as AssessmentIcon,
+  PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import moment from 'moment';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -75,7 +79,8 @@ type ExtendedEnrollment = EnrollmentFull & {
     id: number;
     name: string;
   };
-  evaluations?: Evaluation[];
+  evaluations: Evaluation[];
+  averageGrade?: number;
 }
 
 interface TabPanelProps {
@@ -87,13 +92,26 @@ interface TabPanelProps {
 
 // Função para converter EnrollmentFull para ExtendedEnrollment
 function convertToExtendedEnrollment(enrollment: EnrollmentFull, student?: Student): ExtendedEnrollment {
+  // Garantir que enrollment.evaluations seja sempre um array
+  const evaluations = Array.isArray(enrollment.evaluations) ? enrollment.evaluations : [];
+  
+  console.log('Convertendo enrollment para ExtendedEnrollment:', enrollment.id, 'avaliações:', evaluations);
+  
+  // Calcular média do aluno
+  let averageGrade = undefined;
+  if (evaluations && evaluations.length > 0) {
+    const sum = evaluations.reduce((acc, evaluation) => acc + evaluation.grade, 0);
+    averageGrade = sum / evaluations.length;
+  }
+  
   return {
     ...enrollment,
     student: {
       id: enrollment.studentId,
       name: student ? student.fullName : `Aluno ${enrollment.studentId}` // Usa nome real do aluno ou valor padrão
     },
-    evaluations: [],
+    evaluations: evaluations,
+    averageGrade: averageGrade,
     // Garantir que propriedades importantes estejam disponíveis
     studentId: enrollment.studentId,
     status: enrollment.status || 'active'
@@ -134,7 +152,8 @@ const FrequenciaAvaliacao: React.FC = () => {
     order?: number;
   }
   
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -177,7 +196,8 @@ const FrequenciaAvaliacao: React.FC = () => {
   
   const [tabValue, setTabValue] = useState(0);
   const [attendanceDate, setAttendanceDate] = useState(moment().format('YYYY-MM-DD'));
-  const [attendanceRecords, setAttendanceRecords] = useState<Record<number, boolean>>({}); 
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<number, boolean>>({});
+  const [savedAttendanceDates, setSavedAttendanceDates] = useState<string[]>([]); 
   const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState<ExtendedEnrollment | null>(null);
   const [moduleId, setModuleId] = useState(1);
@@ -193,19 +213,61 @@ const FrequenciaAvaliacao: React.FC = () => {
     setTabValue(newValue);
   };
 
-  // Efeito para carregar curso e matrículas
+  // Função para coletar todas as datas de frequência existentes
+  const collectAttendanceDates = useCallback(() => {
+    if (!enrollments || enrollments.length === 0) return;
+    
+    const datesSet = new Set<string>();
+    
+    // Percorrer todas as matrículas e coletar datas únicas de frequência
+    enrollments.forEach(enrollment => {
+      if (enrollment.attendance && enrollment.attendance.length > 0) {
+        enrollment.attendance.forEach(record => {
+          if (record.date) {
+            datesSet.add(record.date);
+          }
+        });
+      }
+    });
+    
+    // Converter para array e ordenar por data (mais recente primeiro)
+    const datesArray = Array.from(datesSet).sort((a, b) => {
+      return moment(b).diff(moment(a));
+    });
+    
+    console.log('Datas de frequência coletadas:', datesArray);
+    setSavedAttendanceDates(datesArray);
+  }, [enrollments]);
+
+  // Efeito para carregar o curso e as matrículas - apenas na montagem inicial do componente
   useEffect(() => {
     if (id) {
       dispatch(fetchCourseById(Number(id)));
-      dispatch(fetchEnrollmentsByCourse(Number(id)));
-      dispatch(fetchStudents()).unwrap().then((response: Student[]) => {
-        console.log('Estudantes carregados:', response);
-      }).catch((err: Error) => {
-        console.error('Erro ao carregar estudantes:', err);
-      });
+      dispatch(fetchEnrollmentsByCourse(Number(id)))
+        .unwrap()
+        .then(() => {
+          // Só coletar as datas uma vez que as matrículas estejam carregadas
+          setTimeout(() => {
+            collectAttendanceDates();
+          }, 500);
+        });
+      dispatch(fetchStudents()); // Carregar dados dos alunos
     }
   }, [dispatch, id]);
   
+  // Efeito para recarregar os dados quando saveSuccess mudar
+  useEffect(() => {
+    if (saveSuccess && id) {
+      console.log('Avaliação salva com sucesso, recarregando dados...');
+      // Recarregar matrículas após salvar com sucesso
+      setTimeout(() => {
+        dispatch(fetchEnrollmentsByCourse(Number(id)));
+        // Resetar o estado de sucesso após recarregar os dados
+        setTimeout(() => setSaveSuccess(false), 500);
+      }, 500);
+    }
+  }, [saveSuccess, dispatch, id]);
+
   // Efeito para carregar detalhes de cada aluno quando as matrículas são carregadas
   const enrollmentsRaw = useAppSelector((state: RootState) => {
     const enrollmentsState = state.enrollments as EnrollmentsState;
@@ -243,11 +305,57 @@ const FrequenciaAvaliacao: React.FC = () => {
   }, [enrollmentsRaw, loadStudentsForEnrollments]);
 
   const handleAttendanceDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAttendanceDate(e.target.value);
-    // Reset attendance records when date changes
-    setAttendanceRecords({});
+    const newDate = e.target.value;
+    setAttendanceDate(newDate);
+    
+    // Carregar os registros de presença existentes para a data selecionada
+    const newAttendanceRecords: Record<number, boolean> = {};
+    
+    // Para cada matrícula, verificar se existe registro para a data selecionada
+    enrollments.forEach((enrollment) => {
+      const attendanceForDate = enrollment.attendance?.find(
+        (record) => record.date === newDate
+      );
+      
+      // Se existir registro para esta data, usar o valor existente
+      if (attendanceForDate) {
+        newAttendanceRecords[enrollment.studentId] = attendanceForDate.present;
+      } else {
+        // Se não existir, inicializar como falso (ausente)
+        newAttendanceRecords[enrollment.studentId] = false;
+      }
+    });
+    
+    console.log('Registros de presença carregados para a data', newDate, newAttendanceRecords);
+    setAttendanceRecords(newAttendanceRecords);
   };
 
+  // Função para lidar com a seleção de uma data existente
+  const handleSelectDate = (date: string) => {
+    setAttendanceDate(date);
+    
+    // Carregar os registros de presença para a data selecionada
+    const newAttendanceRecords: Record<number, boolean> = {};
+    
+    // Para cada matrícula, verificar se existe registro para a data selecionada
+    enrollments.forEach((enrollment) => {
+      const attendanceForDate = enrollment.attendance?.find(
+        (record) => record.date === date
+      );
+      
+      // Se existir registro para esta data, usar o valor existente
+      if (attendanceForDate) {
+        newAttendanceRecords[enrollment.studentId] = attendanceForDate.present;
+      } else {
+        // Se não existir, inicializar como falso (ausente)
+        newAttendanceRecords[enrollment.studentId] = false;
+      }
+    });
+    
+    console.log(`Registros de presença carregados para ${date}:`, newAttendanceRecords);
+    setAttendanceRecords(newAttendanceRecords);
+  };
+  
   const toggleAttendance = (studentId: number) => {
     setAttendanceRecords((prev: Record<number, boolean>) => ({
       ...prev,
@@ -286,32 +394,69 @@ const FrequenciaAvaliacao: React.FC = () => {
             courseId: enrollment.courseId,
             enrollmentDate: enrollment.enrollmentDate,
             status: enrollment.status,
-            attendance: updatedAttendance
+            attendance: updatedAttendance,
+            evaluations: enrollment.evaluations || [] // Adicionando a propriedade evaluations que estava faltando
           };
           
           await dispatch(updateEnrollment(enrollmentToUpdate));
         }
       }
+      
+      // Mostrar mensagem de sucesso
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      
+      // Evitar loop infinito: não recarregar matrículas imediatamente
+      // Em vez disso, atualize a lista de datas em um timeout
+      setTimeout(() => {
+        if (id) {
+          dispatch(fetchEnrollmentsByCourse(Number(id)))
+            .unwrap()
+            .then(() => {
+              // Só coletar as datas uma vez que as matrículas estejam carregadas
+              collectAttendanceDates();
+              setSaveSuccess(false);
+            });
+        }
+      }, 1000);
+      
     } catch (error) {
-      console.error('Erro ao salvar frequência:', error);
+      console.error('Erro ao salvar frequencia:', error);
     }
   };
 
   const handleOpenEvaluationDialog = (enrollment: ExtendedEnrollment) => {
     setSelectedEnrollment(enrollment);
     setEvaluationDialogOpen(true);
+    // Resetar campos do formulário para valores padrão
+    setModuleId(1);
+    setModuleName('Fundamentos');
+    setEvaluationType('prova');
+    setGrade('');
+    setComments('');
+    setEvaluationDate(moment().format('YYYY-MM-DD'));
   };
 
   const handleSaveEvaluation = async () => {
     try {
       // Only one student selected for evaluation
       if (selectedEnrollment) {
-        const existingEvaluations = selectedEnrollment.evaluations || [];
+        console.log('Enrollment antes de atualizar:', selectedEnrollment);
+        
+        // Trabalhar com a matrícula selecionada
+        const currentEnrollment = enrollments.find(e => e.id === selectedEnrollment.id);
+        
+        // Se não encontrar a matrícula no estado, usa a selecionada
+        const enrollmentToModify = currentEnrollment || selectedEnrollment;
+        
+        // Garantir que a propriedade evaluations é um array
+        const existingEvaluations = Array.isArray(enrollmentToModify.evaluations) 
+          ? enrollmentToModify.evaluations 
+          : [];
+        
+        console.log('Avaliações existentes:', existingEvaluations);
         
         const newEvaluation: Evaluation = {
-          id: Math.floor(Math.random() * 10000), // Generate random ID for now
+          id: Date.now(), // ID baseado no timestamp atual para garantir unicidade
           moduleId,
           moduleName,
           evaluationType,
@@ -319,33 +464,55 @@ const FrequenciaAvaliacao: React.FC = () => {
           grade: Number(grade),
           comments
         };
+        console.log('Nova avaliação:', newEvaluation);
         
-        // Criando um objeto de matrícula para atualização
+        // Adicionar a nova avaliação à lista existente
+        const updatedEvaluations = [...existingEvaluations, newEvaluation];
+        console.log('Lista atualizada de avaliações:', updatedEvaluations);
+        
+        // Calcular a nova média
+        const sum = updatedEvaluations.reduce((acc, evaluation) => acc + evaluation.grade, 0);
+        const averageGrade = sum / updatedEvaluations.length;
+        console.log('Média calculada:', averageGrade);
+        
+        // Criando um objeto de matrícula completo para atualização
         const enrollmentToUpdate: EnrollmentFull = {
-          id: selectedEnrollment.id,
-          studentId: selectedEnrollment.studentId,
-          courseId: selectedEnrollment.courseId,
-          enrollmentDate: selectedEnrollment.enrollmentDate,
-          status: selectedEnrollment.status,
-          attendance: selectedEnrollment.attendance || []
-          // Nota: não podemos incluir evaluations diretamente pois não faz parte da interface EnrollmentFull
+          id: enrollmentToModify.id,
+          studentId: enrollmentToModify.studentId,
+          courseId: enrollmentToModify.courseId,
+          enrollmentDate: enrollmentToModify.enrollmentDate,
+          status: enrollmentToModify.status,
+          attendance: enrollmentToModify.attendance || [],
+          evaluations: updatedEvaluations,
+          averageGrade: averageGrade,
+          studentName: enrollmentToModify.studentName
         };
         
-        // Adicionando a avaliação através da atualização da matrícula
-        await dispatch(updateEnrollment(enrollmentToUpdate));
-
-        // Reset form
-        setEvaluationDialogOpen(false);
-        setModuleId(1);
-        setModuleName('Introdução');
-        setEvaluationType('prova');
-        setGrade('');
-        setComments('');
-        setSelectedEnrollment(null);
+        console.log('Enrollment para atualizar:', enrollmentToUpdate);
         
-        // Reload enrollments
-        if (id) {
-          dispatch(fetchEnrollmentsByCourse(Number(id)));
+        try {
+          // Adicionando a avaliação através da atualização da matrícula
+          const result = await dispatch(updateEnrollment(enrollmentToUpdate));
+          console.log('Resultado da atualização:', result);
+          
+          // Mostrar notificação de sucesso
+          setSaveSuccess(true);
+          
+          // Reset form
+          setEvaluationDialogOpen(false);
+          setModuleId(1);
+          setModuleName('Introdução');
+          setEvaluationType('prova');
+          setGrade('');
+          setComments('');
+          setSelectedEnrollment(null);
+          
+          // Recarregar as matrículas imediatamente
+          if (id) {
+            dispatch(fetchEnrollmentsByCourse(Number(id)));
+          }
+        } catch (innerError) {
+          console.error('Erro ao salvar avaliação no Redux:', innerError);
         }
       }
     } catch (error) {
@@ -380,6 +547,12 @@ const FrequenciaAvaliacao: React.FC = () => {
   };
 
   const getStudentAverageGrade = (enrollment: ExtendedEnrollment) => {
+    // Se a média já foi calculada e armazenada, usar esse valor
+    if (enrollment.averageGrade !== undefined) {
+      return enrollment.averageGrade.toFixed(1);
+    }
+    
+    // Caso contrário, calcular na hora
     if (!enrollment.evaluations || enrollment.evaluations.length === 0) {
       return '-';
     }
@@ -460,6 +633,29 @@ const FrequenciaAvaliacao: React.FC = () => {
                 </Button>
               </Grid>
             </Grid>
+            
+            {/* Lista de datas já cadastradas */}
+            {savedAttendanceDates.length > 0 && (
+              <Box mt={2} p={2} border="1px solid #e0e0e0" borderRadius={1}>
+                <Typography variant="subtitle1" gutterBottom>
+                  <CalendarIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                  Datas de aula cadastradas:
+                </Typography>
+                <Box display="flex" flexWrap="wrap" gap={1}>
+                  {savedAttendanceDates.map((date) => {
+                    // Separar as props para evitar o warning de key em spread operator
+                    const chipProps = {
+                      label: moment(date).format('DD/MM/YYYY'),
+                      color: date === attendanceDate ? "primary" : "default",
+                      onClick: () => handleSelectDate(date),
+                      variant: date === attendanceDate ? "filled" : "outlined" as "filled" | "outlined",
+                      size: isMobile ? "small" : "medium"
+                    } as const;
+                    return <Chip key={date} {...chipProps} />;
+                  })}
+                </Box>
+              </Box>
+            )}
           </Box>
 
           <TableContainer sx={{ overflowX: 'auto' }}>
@@ -511,7 +707,34 @@ const FrequenciaAvaliacao: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Box mb={isMobile ? 1 : 2} textAlign={isMobile ? "center" : "right"}>
+          <Box mb={2}>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<PersonAddIcon />}
+              onClick={() => navigate(`/cursos/${id}/matricular-alunos`)}
+              sx={{ mr: 2 }}
+            >
+              Matricular Alunos
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AssessmentIcon />}
+              onClick={() => navigate(`/relatorios/desempenho?cursoId=${id}`)}
+            >
+              Relatório de Desempenho
+            </Button>
+          </Box>
+          <Box mb={isMobile ? 1 : 2} sx={{
+            display: 'flex',
+            justifyContent: isMobile ? 'center' : 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2
+          }}>
+            <Typography variant="h6" component="h2">
+              Avaliações dos Alunos
+            </Typography>
             <Button
               variant="contained"
               color="primary"
@@ -519,7 +742,6 @@ const FrequenciaAvaliacao: React.FC = () => {
               disabled={enrollments.length === 0}
               onClick={() => enrollments.length > 0 && handleOpenEvaluationDialog(enrollments[0])}
               size={isMobile ? "small" : "medium"}
-              fullWidth={isMobile}
             >
               {isMobile ? "Nova" : "Nova Avaliação"}
             </Button>
@@ -555,7 +777,15 @@ const FrequenciaAvaliacao: React.FC = () => {
                           (students.find((s: Student) => s.id === enrollment.studentId)?.fullName || `Aluno ${enrollment.studentId}`)}
                     </TableCell>
                     {!isMobile && <TableCell>{enrollment.status === 'active' ? 'Ativo' : 'Inativo'}</TableCell>}
-                    <TableCell align="center">{getStudentAverageGrade(enrollment)}</TableCell>
+                    <TableCell align="center">
+                      <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        color={(enrollment.averageGrade || 0) >= 7 ? 'success.main' : 'error.main'}
+                      >
+                        {getStudentAverageGrade(enrollment)}
+                      </Typography>
+                    </TableCell>
                     <TableCell align="center">
                       <IconButton
                         onClick={() => handleOpenEvaluationDialog(enrollment)}
@@ -587,7 +817,11 @@ const FrequenciaAvaliacao: React.FC = () => {
           }
         }}
       >
-        <DialogTitle sx={{ fontSize: isMobile ? '1.1rem' : '1.25rem' }}>Adicionar Avaliação</DialogTitle>
+        <DialogTitle sx={{ fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+          {selectedEnrollment && (
+            <>Avaliação - {selectedEnrollment.student?.name}</>
+          )}
+        </DialogTitle>
         <DialogContent>
           <Grid container spacing={isMobile ? 1 : 2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
@@ -612,6 +846,34 @@ const FrequenciaAvaliacao: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel id="evaluation-type-label">Tipo de Avaliação</InputLabel>
+                <Select
+                  labelId="evaluation-type-label"
+                  value={evaluationType}
+                  label="Tipo de Avaliação"
+                  onChange={(e) => setEvaluationType(e.target.value)}
+                >
+                  <MenuItem value="prova">Prova</MenuItem>
+                  <MenuItem value="trabalho">Trabalho</MenuItem>
+                  <MenuItem value="apresentacao">Apresentação</MenuItem>
+                  <MenuItem value="participacao">Participação</MenuItem>
+                  <MenuItem value="projeto">Projeto</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Data da Avaliação"
+                type="date"
+                value={evaluationDate}
+                onChange={(e) => setEvaluationDate(e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                size={isMobile ? "small" : "medium"}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 label="Nota"
                 type="number"
@@ -620,6 +882,9 @@ const FrequenciaAvaliacao: React.FC = () => {
                 InputProps={{ inputProps: { min: 0, max: 10, step: 0.1 } }}
                 fullWidth
                 size={isMobile ? "small" : "medium"}
+                required
+                error={grade === ''}
+                helperText={grade === '' ? 'A nota é obrigatória' : ''}
               />
             </Grid>
             <Grid item xs={12}>
@@ -637,22 +902,23 @@ const FrequenciaAvaliacao: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Stack direction="row" spacing={1} width="100%" justifyContent={isMobile ? "space-between" : "flex-end"}>
-            <DialogActions sx={{ padding: isMobile ? 1 : 2 }}>
-              <Button onClick={() => setEvaluationDialogOpen(false)} 
-                size={isMobile ? "small" : "medium"}
-                sx={{ mr: 1 }}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSaveEvaluation}
-                variant="contained"
-                color="primary"
-                size={isMobile ? "small" : "medium"}
-                startIcon={!isMobile && <SaveIcon />}
-              >
-                Salvar
-              </Button>
-            </DialogActions>
+            <Button 
+              onClick={() => setEvaluationDialogOpen(false)} 
+              size={isMobile ? "small" : "medium"}
+              sx={{ mr: 1 }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveEvaluation}
+              variant="contained"
+              color="primary"
+              size={isMobile ? "small" : "medium"}
+              startIcon={!isMobile && <SaveIcon />}
+              disabled={grade === ''}
+            >
+              Salvar
+            </Button>
           </Stack>
         </DialogActions>
       </Dialog>
