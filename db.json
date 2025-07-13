@@ -133,6 +133,14 @@
       "education": "Licenciatura",
       "specializations": [
         "Artes"
+      ],
+      "timeClockRecords": [
+        {
+          "id": 1752447128469,
+          "date": "2025-07-13",
+          "checkIn": "19:52",
+          "checkOut": "19:52"
+        }
       ]
     },
     {

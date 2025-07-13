@@ -20,6 +20,7 @@ import ListaProfessores from './Professores/ListaProfessores';
 import FormProfessor from './Professores/FormProfessor';
 import DetalhesProfessor from './Professores/DetalhesProfessor';
 import CursosProfessor from './Professores/CursosProfessor';
+import RegistroPonto from './Professores/RegistroPonto';
 
 // Cursos
 import ListaCursos from './Cursos/ListaCursos';
@@ -108,6 +109,7 @@ const Routes = () => {
           <Route path="editar/:id" element={<FormProfessor />} />
           <Route path=":id" element={<DetalhesProfessor />} />
           <Route path=":id/cursos" element={<CursosProfessor />} />
+          <Route path=":id/ponto" element={<RegistroPonto />} />
         </Route>
 
         {/* Rotas de Cursos */}

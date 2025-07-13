@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { 
-  Box, 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Drawer, 
-  List, 
-  ListItem, 
-  ListItemIcon, 
-  ListItemText, 
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   IconButton,
   Divider,
   useTheme,
   Avatar,
   Menu,
   MenuItem,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,7 +27,7 @@ import {
   MenuBook as CourseIcon,
   Assessment as ReportIcon,
   Person as PersonIcon,
-  ExitToApp as LogoutIcon
+  ExitToApp as LogoutIcon,
 } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
@@ -39,34 +39,34 @@ const Layout: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state: RootState) => state.auth);
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
-  
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
-  
+
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  
+
   const handleProfileMenuClose = () => {
     setAnchorEl(null);
   };
-  
+
   const handleLogout = () => {
     handleProfileMenuClose();
     dispatch(logoutUser());
     navigate('/login');
   };
-  
+
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Alunos', icon: <StudentIcon />, path: '/alunos' },
@@ -74,7 +74,7 @@ const Layout: React.FC = () => {
     { text: 'Cursos', icon: <CourseIcon />, path: '/cursos' },
     { text: 'Relatórios', icon: <ReportIcon />, path: '/relatorios' },
   ];
-  
+
   const drawer = (
     <Box>
       <Box
@@ -86,7 +86,8 @@ const Layout: React.FC = () => {
         }}
       >
         <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-          Gestão Acadêmica
+          {/* Gestão Acadêmica */}
+          Nosso Lar
         </Typography>
       </Box>
       <Divider />
@@ -112,7 +113,7 @@ const Layout: React.FC = () => {
       </List>
     </Box>
   );
-  
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
@@ -120,7 +121,7 @@ const Layout: React.FC = () => {
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
-          zIndex: (theme) => theme.zIndex.drawer + 1
+          zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -134,13 +135,13 @@ const Layout: React.FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography 
-              variant="h6" 
-              noWrap 
-              component="div" 
-              sx={{ 
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{
                 flexGrow: 1,
-                fontSize: { xs: '1rem', sm: '1.25rem' } 
+                fontSize: { xs: '1rem', sm: '1.25rem' },
               }}
             >
               Sistema de Gestão Acadêmica
@@ -243,7 +244,7 @@ const Layout: React.FC = () => {
           p: { xs: 2, sm: 3 },
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: { xs: 7, sm: 8 },
-          overflow: 'auto'
+          overflow: 'auto',
         }}
       >
         <Box sx={{ maxWidth: '100%' }}>

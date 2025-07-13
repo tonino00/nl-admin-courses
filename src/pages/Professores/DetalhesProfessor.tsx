@@ -36,6 +36,7 @@ import {
   Person as PersonIcon,
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
+  AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { fetchTeacherById } from '../../store/slices/teachersSlice';
@@ -165,6 +166,15 @@ const DetalhesProfessor: React.FC = () => {
           sx={{ mr: 1 }}
         >
           Gerenciar Cursos
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          startIcon={<AccessTimeIcon />}
+          onClick={() => navigate(`/professores/${id}/ponto`)}
+          sx={{ mr: 1 }}
+        >
+          Registro de Ponto
         </Button>
         <Button
           variant="contained"

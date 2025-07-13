@@ -1,19 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  Button, 
-  CircularProgress, 
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
   Alert,
-  Grid,
-  Divider
 } from '@mui/material';
 import {
   Print as PrintIcon,
   PictureAsPdf as PdfIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchCourseById } from '../../store/slices/coursesSlice';
@@ -27,9 +25,15 @@ const Certificado: React.FC = () => {
   const dispatch = useAppDispatch();
   const certificateRef = useRef<HTMLDivElement>(null);
 
-  const { currentCourse, loading: courseLoading } = useAppSelector(state => state.courses);
-  const { enrollments, loading: enrollmentsLoading } = useAppSelector(state => state.enrollments);
-  const { currentStudent, loading: studentLoading } = useAppSelector(state => state.students);
+  const { currentCourse, loading: courseLoading } = useAppSelector(
+    (state) => state.courses
+  );
+  const { enrollments, loading: enrollmentsLoading } = useAppSelector(
+    (state) => state.enrollments
+  );
+  const { currentStudent, loading: studentLoading } = useAppSelector(
+    (state) => state.students
+  );
 
   const [isEligible, setIsEligible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -41,17 +45,26 @@ const Certificado: React.FC = () => {
       dispatch(fetchCourseById(Number(courseId)));
       dispatch(fetchEnrollmentsByCourse(Number(courseId)));
     }
-    
+
     if (studentId) {
       dispatch(fetchStudentById(Number(studentId)));
     }
   }, [dispatch, courseId, studentId]);
 
   useEffect(() => {
-    if (!courseLoading && !enrollmentsLoading && !studentLoading && currentCourse && currentStudent && enrollments.length > 0) {
+    if (
+      !courseLoading &&
+      !enrollmentsLoading &&
+      !studentLoading &&
+      currentCourse &&
+      currentStudent &&
+      enrollments.length > 0
+    ) {
       // Find enrollment for this student
-      const enrollment = enrollments.find(e => e.studentId === Number(studentId));
-      
+      const enrollment = enrollments.find(
+        (e) => e.studentId === Number(studentId)
+      );
+
       if (!enrollment) {
         setErrorMessage('Este aluno não está matriculado neste curso.');
         return;
@@ -61,7 +74,9 @@ const Certificado: React.FC = () => {
       let attendancePercentage = 0;
       if (enrollment.attendance && enrollment.attendance.length > 0) {
         const totalClasses = enrollment.attendance.length;
-        const presentClasses = enrollment.attendance.filter(a => a.present).length;
+        const presentClasses = enrollment.attendance.filter(
+          (a) => a.present
+        ).length;
         attendancePercentage = (presentClasses / totalClasses) * 100;
         setAttendance(attendancePercentage);
       } else {
@@ -72,7 +87,10 @@ const Certificado: React.FC = () => {
       // Calculate grade
       let averageGrade = 0;
       if (enrollment.evaluations && enrollment.evaluations.length > 0) {
-        const totalGrade = enrollment.evaluations.reduce((sum, evaluation) => sum + evaluation.grade, 0);
+        const totalGrade = enrollment.evaluations.reduce(
+          (sum, evaluation) => sum + evaluation.grade,
+          0
+        );
         averageGrade = totalGrade / enrollment.evaluations.length;
         setGrade(averageGrade);
       } else {
@@ -86,12 +104,20 @@ const Certificado: React.FC = () => {
       } else {
         setErrorMessage(
           `O aluno não atende aos requisitos para certificação. ` +
-          `Frequência: ${attendancePercentage.toFixed(1)}% (mínimo 75%), ` +
-          `Média: ${averageGrade.toFixed(1)} (mínimo 7.0)`
+            `Frequência: ${attendancePercentage.toFixed(1)}% (mínimo 75%), ` +
+            `Média: ${averageGrade.toFixed(1)} (mínimo 7.0)`
         );
       }
     }
-  }, [courseLoading, enrollmentsLoading, studentLoading, currentCourse, currentStudent, enrollments, studentId]);
+  }, [
+    courseLoading,
+    enrollmentsLoading,
+    studentLoading,
+    currentCourse,
+    currentStudent,
+    enrollments,
+    studentId,
+  ]);
 
   const handlePrint = () => {
     const content = certificateRef.current;
@@ -216,7 +242,14 @@ const Certificado: React.FC = () => {
 
   if (courseLoading || enrollmentsLoading || studentLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -225,9 +258,7 @@ const Certificado: React.FC = () => {
   if (!currentCourse || !currentStudent) {
     return (
       <Box maxWidth="lg" sx={{ mx: 'auto', p: 2 }}>
-        <Alert severity="error">
-          Curso ou aluno não encontrado.
-        </Alert>
+        <Alert severity="error">Curso ou aluno não encontrado.</Alert>
         <Box mt={2}>
           <Button
             variant="outlined"
@@ -241,7 +272,9 @@ const Certificado: React.FC = () => {
     );
   }
 
-  const certificateId = `CERT-${courseId}-${studentId}-${Date.now().toString().substring(7)}`;
+  const certificateId = `CERT-${courseId}-${studentId}-${Date.now()
+    .toString()
+    .substring(7)}`;
   const today = moment().format('DD/MM/YYYY');
 
   return (
@@ -278,46 +311,44 @@ const Certificado: React.FC = () => {
             </Button>
           </Box>
 
-          <Paper 
-            elevation={3} 
+          <Paper
+            elevation={3}
             sx={{ p: 4, maxWidth: '800px', mx: 'auto', mb: 4 }}
             ref={certificateRef}
           >
             <Box className="certificate">
               <Box className="header">
-                <Typography variant="h4" className="title">CERTIFICADO</Typography>
-                <Typography variant="subtitle1">DE CONCLUSÃO DE CURSO</Typography>
+                <Typography variant="h4" className="title">
+                  CERTIFICADO
+                </Typography>
+                <Typography variant="subtitle1">
+                  DE CONCLUSÃO DE CURSO
+                </Typography>
               </Box>
 
               <Box className="content">
-                <Typography>
-                  Certificamos que
-                </Typography>
-                
+                <Typography>Certificamos que</Typography>
+
                 <Typography variant="h5" className="student-name">
                   {currentStudent.fullName}
                 </Typography>
-                
-                <Typography>
-                  concluiu com êxito o curso
-                </Typography>
-                
+
+                <Typography>concluiu com êxito o curso</Typography>
+
                 <Typography variant="h6" className="course-name">
                   {currentCourse.name}
                 </Typography>
-                
+
                 <Box className="details">
                   <Typography>
-                    com carga horária de {currentCourse.workload} horas,
-                    obtendo aproveitamento de {grade.toFixed(1)} pontos
-                    e frequência de {attendance.toFixed(1)}%.
+                    com carga horária de {currentCourse.workload} horas, obtendo
+                    aproveitamento de {grade.toFixed(1)} pontos e frequência de{' '}
+                    {attendance.toFixed(1)}%.
                   </Typography>
                 </Box>
 
                 <Box mt={2}>
-                  <Typography>
-                    {today}
-                  </Typography>
+                  <Typography>{today}</Typography>
                 </Box>
 
                 <Box className="signature">
@@ -335,7 +366,8 @@ const Certificado: React.FC = () => {
 
                 <Box className="footer">
                   <Typography variant="body2">
-                    Este certificado está em conformidade com a legislação vigente e possui validade em todo o território nacional.
+                    Este certificado está em conformidade com a legislação
+                    vigente e possui validade em todo o território nacional.
                   </Typography>
                 </Box>
 

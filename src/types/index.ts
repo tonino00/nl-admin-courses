@@ -38,12 +38,22 @@ export interface Student extends Person {
   certificates: Certificate[];
 }
 
+// Time Clock Type
+export interface TimeClockRecord {
+  id: number;
+  date: string;
+  checkIn: string;
+  checkOut: string | null;
+  comments?: string;
+}
+
 // Teacher Type
 export interface Teacher extends Person {
   bio: string;
   education: string;
   specializations: string[];
   courses: number[];
+  timeClockRecords?: TimeClockRecord[];
 }
 
 // Course Type
