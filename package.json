@@ -49,7 +49,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "dev": "concurrently \"npm run start\" \"npm run json-server\"",
+    "dev": "concurrently --names \"REACT,JSON\" --prefix-colors \"blue.bold,green.bold\" \"npm start\" \"npm run json-server\"",
     "json-server": "json-server --watch db.json --port 3002"
   },
   "eslintConfig": {
@@ -71,8 +71,14 @@
     ]
   },
   "devDependencies": {
+    "@hot-loader/react-dom": "^17.0.2",
     "@types/styled-components": "^5.1.26",
     "concurrently": "^8.2.0",
-    "json-server": "^0.17.3"
+    "cross-env": "^7.0.3",
+    "crypto-browserify": "^3.12.1",
+    "json-server": "^0.17.3",
+    "path-browserify": "^1.0.1",
+    "react-app-rewired": "^2.2.1",
+    "stream-browserify": "^3.0.0"
   }
 }
