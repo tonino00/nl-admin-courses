@@ -165,14 +165,14 @@ const FormProfessor: React.FC = () => {
     setValue,
     watch,
     register 
-  } = useForm({
+  } = useForm<TeacherFormData>({
     defaultValues: initialFormState,
     shouldUnregister: false,
     mode: 'onBlur'
   });
   
   // Definir manualmente sem usar a função watch diretamente
-  const watchSpecializations: string[] = watch('specializations') || [];
+  const watchSpecializations = watch('specializations') || [];
   
   // Buscar dados do professor para edição
   useEffect(() => {
@@ -217,7 +217,7 @@ const FormProfessor: React.FC = () => {
     if (newSpecialization.trim()) {
       const currentSpecializations = [...watchSpecializations];
       if (!currentSpecializations.includes(newSpecialization)) {
-        setValue('specializations', [...currentSpecializations, newSpecialization] as string[]);
+        setValue('specializations', [...currentSpecializations, newSpecialization]);
       }
       setNewSpecialization('');
     }
@@ -228,7 +228,7 @@ const FormProfessor: React.FC = () => {
     const currentSpecializations = [...watchSpecializations];
     setValue(
       'specializations',
-      currentSpecializations.filter((spec) => spec !== specializationToDelete) as string[]
+      currentSpecializations.filter((spec) => spec !== specializationToDelete)
     );
   };
   

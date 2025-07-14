@@ -140,6 +140,13 @@
           "date": "2025-07-13",
           "checkIn": "19:52",
           "checkOut": "19:52"
+        },
+        {
+          "id": 1752503354239,
+          "date": "2025-07-14",
+          "checkIn": "11:29",
+          "checkOut": "11:29",
+          "comments": "Aula de informática - básica"
         }
       ]
     },
@@ -240,50 +247,6 @@
   ],
   "enrollments": [
     {
-      "id": 1,
-      "studentId": 1,
-      "courseId": 1,
-      "enrollmentDate": "2023-02-01",
-      "status": "active",
-      "attendance": [
-        {
-          "date": "2023-02-06",
-          "present": true
-        },
-        {
-          "date": "2023-02-08",
-          "present": true
-        },
-        {
-          "date": "2023-02-13",
-          "present": true
-        },
-        {
-          "date": "2025-07-13",
-          "present": true
-        },
-        {
-          "date": "2025-07-14",
-          "present": true
-        },
-        {
-          "date": "2025-07-17",
-          "present": true
-        }
-      ],
-      "evaluations": [
-        {
-          "id": 1752385996530,
-          "moduleId": 1,
-          "moduleName": "Fundamentos",
-          "evaluationType": "prova",
-          "evaluationDate": "2025-07-13",
-          "grade": 8.1,
-          "comments": ""
-        }
-      ]
-    },
-    {
       "id": 3,
       "studentId": 2,
       "courseId": 2,
@@ -329,9 +292,18 @@
           "evaluationDate": "2025-07-13",
           "grade": 7,
           "comments": ""
+        },
+        {
+          "id": 1752503506294,
+          "moduleId": 2,
+          "moduleName": "Conceitos Intermediários",
+          "evaluationType": "prova",
+          "evaluationDate": "2025-07-14",
+          "grade": 8,
+          "comments": "Ele precisa prestar mais atenção na aula"
         }
       ],
-      "averageGrade": 7
+      "averageGrade": 7.5
     }
   ],
   "users": [

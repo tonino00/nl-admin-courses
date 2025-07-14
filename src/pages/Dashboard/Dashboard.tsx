@@ -37,9 +37,9 @@ const Dashboard: React.FC = () => {
   const getUserType = () => {
     if (!user) return 'admin'; // Padrão para admin se não houver usuário
     
-    if (user.role === 'ADMIN') return 'admin';
-    if (user.role === 'TEACHER') return 'teacher';
-    if (user.role === 'STUDENT') return 'student';
+    if (user.role === 'admin') return 'admin';
+    if (user.role === 'teacher') return 'teacher';
+    if (user.role === 'student') return 'student';
     
     return 'admin'; // Fallback para admin
   };
@@ -85,9 +85,9 @@ const Dashboard: React.FC = () => {
           Dashboard
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          {user?.role === 'ADMIN' && 'Visão geral da administração acadêmica'}
-          {user?.role === 'TEACHER' && 'Visão geral de suas atividades como professor'}
-          {user?.role === 'STUDENT' && 'Visão geral de seu desempenho acadêmico'}
+          {user?.role === 'admin' && 'Visão geral da administração acadêmica'}
+          {user?.role === 'teacher' && 'Visão geral de suas atividades como professor'}
+          {user?.role === 'student' && 'Visão geral de seu desempenho acadêmico'}
         </Typography>
       </Box>
 
@@ -100,9 +100,9 @@ const Dashboard: React.FC = () => {
           sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab value="overview" label="Visão Geral" />
-          {user?.role === 'ADMIN' && <Tab value="analytics" label="Análise Detalhada" />}
-          {user?.role === 'TEACHER' && <Tab value="students" label="Meus Alunos" />}
-          {user?.role === 'STUDENT' && <Tab value="courses" label="Meus Cursos" />}
+          {user?.role === 'admin' && <Tab value="analytics" label="Análise Detalhada" />}
+          {user?.role === 'teacher' && <Tab value="students" label="Meus Alunos" />}
+          {user?.role === 'student' && <Tab value="courses" label="Meus Cursos" />}
         </Tabs>
 
         {error && (

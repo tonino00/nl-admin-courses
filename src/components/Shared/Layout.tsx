@@ -29,6 +29,7 @@ import {
   Person as PersonIcon,
   ExitToApp as LogoutIcon,
   CalendarMonth as CalendarIcon,
+  Home as HomeIcon,
 } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
@@ -88,10 +89,13 @@ const Layout: React.FC = () => {
           p: 2,
         }}
       >
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-          {/* Gestão Acadêmica */}
-          Nosso Lar
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <HomeIcon color="primary" />
+          <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+            {/* Gestão Acadêmica */}
+            Nosso Lar
+          </Typography>
+        </Box>
       </Box>
       <Divider />
       <List>
