@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { RootState } from '../../store';
 import DashboardContent from '../../components/Dashboard/DashboardContent';
+import AnalyticsContent from '../../components/Dashboard/AnalyticsContent';
 import { getUserDashboard } from '../../services/dashboardService';
 import { UserDashboard } from '../../types/dashboard';
 import { fetchStudents } from '../../store/slices/studentsSlice';
@@ -120,10 +121,21 @@ const Dashboard: React.FC = () => {
             {selectedTab === 'overview' && dashboard && (
               <DashboardContent dashboard={dashboard} />
             )}
-            {/* Outros tabs podem ser implementados posteriormente */}
-            {selectedTab !== 'overview' && (
+            {selectedTab === 'analytics' && (
+              <AnalyticsContent />
+            )}
+            {/* Tabs específicos para professores e alunos */}
+            {selectedTab === 'students' && (
               <Box sx={{ p: 3 }}>
-                <Typography variant="h6">Conteúdo em desenvolvimento</Typography>
+                <Typography variant="h6">Meus Alunos</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Esta seção será implementada em breve com funcionalidades adicionais.
+                </Typography>
+              </Box>
+            )}
+            {selectedTab === 'courses' && (
+              <Box sx={{ p: 3 }}>
+                <Typography variant="h6">Meus Cursos</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Esta seção será implementada em breve com funcionalidades adicionais.
                 </Typography>
