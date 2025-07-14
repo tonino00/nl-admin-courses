@@ -11,6 +11,17 @@ const maskCPF = (value: string | null) => {
   return maskedValue;
 };
 
+const maskCEP = (value: string | null) => {
+  if (typeof value !== 'string' || value === '') {
+    return value;
+  }
+  const maskedValue = value
+    .replace(/\D/g, '')
+    .replace(/(\d{5})(\d)/, '$1-$2')
+    .replace(/(-\d{3})\d+?$/, '$1');
+  return maskedValue;
+};
+
 const maskPhone = (value: string | null): string => {
   if (value === null || value === '') {
     return '';
@@ -145,14 +156,15 @@ const checkAlpha = (char: string) => {
   }
 };
 
-export {
+export { 
   maskCPF,
-  maskPhone,
-  maskOnlyNum,
+  maskCEP,
+  maskPhone, 
+  maskOnlyNum, 
   maskCNS,
-  maskNRP,
-  maskDate,
-  checkAlpha,
-  formatDateToBR,
+  formatDateToBR, 
   parseDateFromBR,
+  maskDate,
+  maskNRP,
+  checkAlpha
 };

@@ -156,8 +156,8 @@ const FormProfessor: React.FC = () => {
   
   const [newSpecialization, setNewSpecialization] = useState('');
   
-  // Omitir o resolver para evitar o problema de tipo infinito
-  const form = useForm({
+  // Usar tipagem explícita para resolver o problema de tipo infinito
+  const form = useForm<TeacherFormData>({
     defaultValues: initialFormState,
     shouldUnregister: false,
     mode: 'onBlur'
@@ -173,7 +173,7 @@ const FormProfessor: React.FC = () => {
   const register = form.register;
   
   // Definir manualmente sem usar a função watch diretamente
-  const watchSpecializations = watch('specializations') || [];
+  const watchSpecializations = watch('specializations') as string[] || [];
   
   // Buscar dados do professor para edição
   useEffect(() => {
@@ -218,7 +218,7 @@ const FormProfessor: React.FC = () => {
     if (newSpecialization.trim()) {
       const currentSpecializations = [...watchSpecializations];
       if (!currentSpecializations.includes(newSpecialization)) {
-        setValue('specializations', [...currentSpecializations, newSpecialization]);
+        setValue('specializations', [...currentSpecializations, newSpecialization] as string[]);
       }
       setNewSpecialization('');
     }
@@ -229,7 +229,7 @@ const FormProfessor: React.FC = () => {
     const currentSpecializations = [...watchSpecializations];
     setValue(
       'specializations',
-      currentSpecializations.filter((spec) => spec !== specializationToDelete)
+      currentSpecializations.filter((spec) => spec !== specializationToDelete) as string[]
     );
   };
   
