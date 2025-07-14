@@ -6,7 +6,8 @@ import {
   Box, Typography, Tabs, Tab, Card, CardContent, CardHeader, 
   Divider, Grid, Paper, List, ListItem, ListItemText, IconButton, 
   Table, TableHead, TableRow, TableCell, TableContainer, TableBody, 
-  Chip, Button, Alert, Avatar, CircularProgress
+  Chip, Button, Alert, Avatar, CircularProgress, Dialog, DialogActions,
+  DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonIcon from '@mui/icons-material/Person';
@@ -21,10 +22,11 @@ import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { Cancel as CancelIcon } from '@mui/icons-material';
 import { CheckCircle as ActiveIcon } from '@mui/icons-material';
 import { Cancel as InactiveIcon } from '@mui/icons-material';
+import { ExitToApp as UnenrollIcon } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { fetchStudentById } from '../../store/slices/studentsSlice';
 import { fetchCourses } from '../../store/slices/coursesSlice';
-import { fetchEnrollmentsByStudent } from '../../store/slices/enrollmentsSlice';
+import { fetchEnrollmentsByStudent, deleteEnrollment } from '../../store/slices/enrollmentsSlice';
 import { Student, Course, EnrollmentFull } from '../../types';
 
 interface TabPanelProps {
@@ -70,6 +72,9 @@ const DetalhesAluno: React.FC = () => {
   );
   
   const [tabValue, setTabValue] = useState(0);
+  const [openUnenrollDialog, setOpenUnenrollDialog] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<number | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   
   useEffect(() => {
     if (id) {
@@ -91,6 +96,37 @@ const DetalhesAluno: React.FC = () => {
   
   const handleBack = () => {
     navigate('/alunos');
+  };
+  
+  // Funções para gerenciar desmatrícula
+  const handleOpenUnenrollDialog = (enrollmentId: number, course: Course) => {
+    setSelectedEnrollment(enrollmentId);
+    setSelectedCourse(course);
+    setOpenUnenrollDialog(true);
+  };
+  
+  const handleCloseUnenrollDialog = () => {
+    setOpenUnenrollDialog(false);
+    setSelectedEnrollment(null);
+    setSelectedCourse(null);
+  };
+  
+  const handleUnenroll = () => {
+    if (selectedEnrollment) {
+      dispatch(deleteEnrollment(selectedEnrollment) as any)
+        .unwrap()
+        .then(() => {
+          // Atualizar lista de matrículas após desmatrícula bem-sucedida
+          if (id) {
+            dispatch(fetchEnrollmentsByStudent(Number(id)) as any);
+          }
+        })
+        .catch((error: any) => {
+          console.error('Erro ao desmatricular aluno:', error);
+        });
+      
+      handleCloseUnenrollDialog();
+    }
   };
   
   const loading = studentLoading || coursesLoading || enrollmentsLoading;
@@ -361,17 +397,29 @@ const DetalhesAluno: React.FC = () => {
                         title={course.name}
                         subheader={`Matrícula: ${enrollment ? formatDateToBR(enrollment.enrollmentDate) : 'N/A'}`}
                         action={
-                          <Chip
-                            label={enrollment?.status === 'active' ? 'Cursando' : enrollment?.status === 'completed' ? 'Concluído' : 'Cancelado'}
-                            color={
-                              enrollment?.status === 'active'
-                                ? 'primary'
-                                : enrollment?.status === 'completed'
-                                ? 'success'
-                                : 'error'
-                            }
-                            size="small"
-                          />
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Chip
+                              label={enrollment?.status === 'active' ? 'Cursando' : enrollment?.status === 'completed' ? 'Concluído' : 'Cancelado'}
+                              color={
+                                enrollment?.status === 'active'
+                                  ? 'primary'
+                                  : enrollment?.status === 'completed'
+                                  ? 'success'
+                                  : 'error'
+                              }
+                              size="small"
+                            />
+                            {enrollment?.status === 'active' && (
+                              <IconButton 
+                                size="small" 
+                                color="error"
+                                onClick={() => handleOpenUnenrollDialog(enrollment.id, course)}
+                                title="Desmatricular aluno"
+                              >
+                                <UnenrollIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Box>
                         }
                       />
                       <Divider />
@@ -668,8 +716,36 @@ const DetalhesAluno: React.FC = () => {
           </Card>
         </TabPanel>
       </Box>
+
+      {/* Diálogo de confirmação para desmatrícula */}
+      <Dialog
+        open={openUnenrollDialog}
+        onClose={handleCloseUnenrollDialog}
+        aria-labelledby="unenroll-dialog-title"
+        aria-describedby="unenroll-dialog-description"
+      >
+        <DialogTitle id="unenroll-dialog-title">
+          Confirmar desmatrícula
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="unenroll-dialog-description">
+            Deseja realmente desmatricular {currentStudent?.fullName} do curso {selectedCourse?.name}?
+            Esta ação não poderá ser desfeita.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseUnenrollDialog} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleUnenroll} color="error" variant="contained" startIcon={<UnenrollIcon />}>
+            Desmatricular
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
+
+
 
 export default DetalhesAluno;

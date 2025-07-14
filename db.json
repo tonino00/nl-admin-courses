@@ -284,23 +284,6 @@
       ]
     },
     {
-      "id": 2,
-      "studentId": 2,
-      "courseId": 3,
-      "enrollmentDate": "2023-03-15",
-      "status": "active",
-      "attendance": [
-        {
-          "date": "2023-03-21",
-          "present": true
-        },
-        {
-          "date": "2023-03-23",
-          "present": true
-        }
-      ]
-    },
-    {
       "id": 3,
       "studentId": 2,
       "courseId": 2,
@@ -349,16 +332,6 @@
         }
       ],
       "averageGrade": 7
-    },
-    {
-      "studentId": 1,
-      "courseId": 2,
-      "studentName": "João Silva",
-      "enrollmentDate": "2025-07-13",
-      "status": "active",
-      "attendance": [],
-      "evaluations": [],
-      "id": 5
     }
   ],
   "users": [

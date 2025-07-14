@@ -90,14 +90,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           </Typography>
         }
         secondary={
-          <Box>
+          <React.Fragment>
             <Typography variant="body2" color="text.primary" component="span">
               {notification.message}
             </Typography>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography variant="caption" color="text.secondary" component="span" sx={{ display: 'block' }}>
               {formattedDate}
             </Typography>
-          </Box>
+          </React.Fragment>
         }
       />
       <IconButton 
