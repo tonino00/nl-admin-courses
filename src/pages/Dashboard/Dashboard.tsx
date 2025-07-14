@@ -1,274 +1,138 @@
-import React, { useEffect } from 'react';
-import { formatDateToBR } from '../../utils/masks';
+import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import {
   Box,
-  Grid,
-  Paper,
+  Container,
   Typography,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
+  Tabs,
+  Tab,
+  Paper,
   CircularProgress,
+  Alert
 } from '@mui/material';
-import {
-  Group as StudentIcon,
-  School as TeacherIcon,
-  MenuBook as CourseIcon,
-  AssignmentTurnedIn as EnrollmentIcon,
-} from '@mui/icons-material';
 import { RootState } from '../../store';
+import DashboardContent from '../../components/Dashboard/DashboardContent';
+import { getUserDashboard } from '../../services/dashboardService';
+import { UserDashboard } from '../../types/dashboard';
 import { fetchStudents } from '../../store/slices/studentsSlice';
 import { fetchTeachers } from '../../store/slices/teachersSlice';
 import { fetchCourses } from '../../store/slices/coursesSlice';
 import { fetchEnrollments } from '../../store/slices/enrollmentsSlice';
-import { Student, Teacher, Course, EnrollmentFull } from '../../types';
 
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { students, loading: studentsLoading } = useAppSelector((state: RootState) => state.students as { students: Student[]; loading: boolean });
-  const { teachers, loading: teachersLoading } = useAppSelector((state: RootState) => state.teachers as { teachers: Teacher[]; loading: boolean });
-  const { courses, loading: coursesLoading } = useAppSelector((state: RootState) => state.courses as { courses: Course[]; loading: boolean });
-  const { enrollments, loading: enrollmentsLoading } = useAppSelector((state: RootState) => state.enrollments as { enrollments: EnrollmentFull[]; loading: boolean });
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const [dashboard, setDashboard] = useState<UserDashboard | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<string>('overview');
   
+  // Ainda mantemos esses dados disponíveis para possível uso no dashboard
+  const { students, loading: studentsLoading } = useAppSelector((state: RootState) => state.students);
+  const { teachers, loading: teachersLoading } = useAppSelector((state: RootState) => state.teachers);
+  const { courses, loading: coursesLoading } = useAppSelector((state: RootState) => state.courses);
+  const { enrollments, loading: enrollmentsLoading } = useAppSelector((state: RootState) => state.enrollments);
+  
+  // Determinar o tipo de usuário baseado no papel atual
+  const getUserType = () => {
+    if (!user) return 'admin'; // Padrão para admin se não houver usuário
+    
+    if (user.role === 'ADMIN') return 'admin';
+    if (user.role === 'TEACHER') return 'teacher';
+    if (user.role === 'STUDENT') return 'student';
+    
+    return 'admin'; // Fallback para admin
+  };
+  
+  // Carregar o dashboard personalizado de acordo com o tipo de usuário
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const userType = getUserType();
+        const dashboardData = await getUserDashboard(userType);
+        setDashboard(dashboardData);
+      } catch (err) {
+        console.error('Erro ao carregar o dashboard:', err);
+        setError('Não foi possível carregar o dashboard. Tente novamente mais tarde.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDashboard();
+  }, [user]);
+  
+  // Também carregamos os dados básicos para uso geral
   useEffect(() => {
     dispatch(fetchStudents());
     dispatch(fetchTeachers());
     dispatch(fetchCourses());
     dispatch(fetchEnrollments());
   }, [dispatch]);
-  
-  const loading = studentsLoading || teachersLoading || coursesLoading || enrollmentsLoading;
 
-  // Calculate active students and courses
-  const activeStudents = students.filter((student: Student) => student.status === 'active');
-  const activeCourses = courses.filter((course: Course) => course.status === 'active');
-  
-  // Get recent enrollments (last 5)
-  const recentEnrollments = [...enrollments]
-    .sort((a, b) => new Date(b.enrollmentDate).getTime() - new Date(a.enrollmentDate).getTime())
-    .slice(0, 5);
+  // Manipular mudança de tabs
+  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+    setSelectedTab(newValue);
+  };
 
-  // Get courses with low availability (less than 30% spots left)
-  const lowAvailabilityCourses = courses
-    .filter((course: Course) => (course.availableSpots / course.totalSpots) < 0.3)
-    .slice(0, 5);
-  
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-      
-      {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          {/* Summary Cards */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: 120,
-                  bgcolor: 'primary.light',
-                  color: 'primary.contrastText',
-                }}
-              >
-                <Box display="flex" alignItems="center">
-                  <StudentIcon sx={{ mr: 2, fontSize: 40 }} />
-                  <Box>
-                    <Typography variant="h4">{activeStudents.length}</Typography>
-                    <Typography variant="subtitle2">Alunos Ativos</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: 120,
-                  bgcolor: 'secondary.light',
-                  color: 'secondary.contrastText',
-                }}
-              >
-                <Box display="flex" alignItems="center">
-                  <TeacherIcon sx={{ mr: 2, fontSize: 40 }} />
-                  <Box>
-                    <Typography variant="h4">{teachers.length}</Typography>
-                    <Typography variant="subtitle2">Professores</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: 120,
-                  bgcolor: 'success.light',
-                  color: 'success.contrastText',
-                }}
-              >
-                <Box display="flex" alignItems="center">
-                  <CourseIcon sx={{ mr: 2, fontSize: 40 }} />
-                  <Box>
-                    <Typography variant="h4">{activeCourses.length}</Typography>
-                    <Typography variant="subtitle2">Cursos Ativos</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: 120,
-                  bgcolor: 'info.light',
-                  color: 'info.contrastText',
-                }}
-              >
-                <Box display="flex" alignItems="center">
-                  <EnrollmentIcon sx={{ mr: 2, fontSize: 40 }} />
-                  <Box>
-                    <Typography variant="h4">{enrollments.length}</Typography>
-                    <Typography variant="subtitle2">Matrículas</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
-          
-          {/* Dashboard Content */}
-          <Grid container spacing={3}>
-            {/* Recent Enrollments */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader title="Matrículas Recentes" />
-                <Divider />
-                <CardContent>
-                  <List>
-                    {recentEnrollments.length > 0 ? (
-                      recentEnrollments.map((enrollment) => {
-                        const student = students.find((s: Student) => s.id === enrollment.studentId);
-                        const course = courses.find((c: Course) => c.id === enrollment.courseId);
-                        
-                        return (
-                          <React.Fragment key={enrollment.id}>
-                            <ListItem alignItems="flex-start">
-                              <ListItemAvatar>
-                                <Avatar alt={student?.fullName}>
-                                  {student?.fullName.charAt(0)}
-                                </Avatar>
-                              </ListItemAvatar>
-                              <ListItemText
-                                primary={student?.fullName}
-                                secondary={
-                                  <>
-                                    <Typography
-                                      component="span"
-                                      variant="body2"
-                                      color="text.primary"
-                                    >
-                                      {course?.name}
-                                    </Typography>
-                                    {` - Matrícula em ${formatDateToBR(enrollment.enrollmentDate)}`}
-                                  </>
-                                }
-                              />
-                            </ListItem>
-                            <Divider variant="inset" component="li" />
-                          </React.Fragment>
-                        );
-                      })
-                    ) : (
-                      <ListItem>
-                        <ListItemText primary="Nenhuma matrícula recente encontrada" />
-                      </ListItem>
-                    )}
-                  </List>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            {/* Courses with Low Availability */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader title="Cursos com Poucas Vagas" />
-                <Divider />
-                <CardContent>
-                  <List>
-                    {lowAvailabilityCourses.length > 0 ? (
-                      lowAvailabilityCourses.map((course: Course) => {
-                        const availabilityPercentage = (course.availableSpots / course.totalSpots) * 100;
-                        const teacher = teachers.find((t: Teacher) => t.id === course.teacherId);
-                        
-                        return (
-                          <React.Fragment key={course.id}>
-                            <ListItem alignItems="flex-start">
-                              <ListItemAvatar>
-                                <Avatar sx={{ bgcolor: 'warning.main' }}>
-                                  <CourseIcon />
-                                </Avatar>
-                              </ListItemAvatar>
-                              <ListItemText
-                                primary={course.name}
-                                secondary={
-                                  <>
-                                    <Typography
-                                      component="span"
-                                      variant="body2"
-                                      color="text.primary"
-                                    >
-                                      {`${course.availableSpots} de ${course.totalSpots} vagas disponíveis (${availabilityPercentage.toFixed(0)}%)`}
-                                    </Typography>
-                                    <br />
-                                    {`Professor: ${teacher?.fullName || 'Não atribuído'}`}
-                                  </>
-                                }
-                              />
-                            </ListItem>
-                            <Divider variant="inset" component="li" />
-                          </React.Fragment>
-                        );
-                      })
-                    ) : (
-                      <ListItem>
-                        <ListItemText primary="Todos os cursos têm vagas suficientes" />
-                      </ListItem>
-                    )}
-                  </List>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </>
-      )}
-    </Box>
+    <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Dashboard
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          {user?.role === 'ADMIN' && 'Visão geral da administração acadêmica'}
+          {user?.role === 'TEACHER' && 'Visão geral de suas atividades como professor'}
+          {user?.role === 'STUDENT' && 'Visão geral de seu desempenho acadêmico'}
+        </Typography>
+      </Box>
+
+      <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Tabs
+          value={selectedTab}
+          onChange={handleTabChange}
+          textColor="primary"
+          indicatorColor="primary"
+          sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab value="overview" label="Visão Geral" />
+          {user?.role === 'ADMIN' && <Tab value="analytics" label="Análise Detalhada" />}
+          {user?.role === 'TEACHER' && <Tab value="students" label="Meus Alunos" />}
+          {user?.role === 'STUDENT' && <Tab value="courses" label="Meus Cursos" />}
+        </Tabs>
+
+        {error && (
+          <Box sx={{ p: 3 }}>
+            <Alert severity="error">{error}</Alert>
+          </Box>
+        )}
+
+        {loading && !error ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Box>
+            {selectedTab === 'overview' && dashboard && (
+              <DashboardContent dashboard={dashboard} />
+            )}
+            {/* Outros tabs podem ser implementados posteriormente */}
+            {selectedTab !== 'overview' && (
+              <Box sx={{ p: 3 }}>
+                <Typography variant="h6">Conteúdo em desenvolvimento</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Esta seção será implementada em breve com funcionalidades adicionais.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+      </Paper>
+    </Container>
   );
 };
 

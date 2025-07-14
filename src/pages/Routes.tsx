@@ -9,6 +9,7 @@ import Layout from '../components/Shared/Layout';
 // Pages
 import Login from './Login/Login';
 import Dashboard from './Dashboard/Dashboard';
+import AcademicCalendar from './Calendar/AcademicCalendar';
 
 // Alunos
 import ListaAlunos from './Alunos/ListaAlunos';
@@ -93,6 +94,9 @@ const Routes = () => {
       >
         {/* Dashboard */}
         <Route index element={<Dashboard />} />
+        
+        {/* Calendário */}
+        <Route path="calendario" element={<AcademicCalendar />} />
 
         {/* Rotas de Alunos */}
         <Route path="alunos">

@@ -8,6 +8,8 @@ import studentsReducer from './slices/studentsSlice';
 import teachersReducer from './slices/teachersSlice';
 import coursesReducer from './slices/coursesSlice';
 import enrollmentsReducer from './slices/enrollmentsSlice';
+import notificationsReducer from './slices/notificationsSlice';
+import calendarReducer from './slices/calendarSlice';
 
 // Configuração de persistência para o reducer de autenticação
 const authPersistConfig = {
@@ -23,12 +25,16 @@ const rootPersistConfig = {
   whitelist: ['auth'] // apenas o state de auth será persistido
 };
 
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+
 const rootReducer = combineReducers({
-  auth: persistReducer(authPersistConfig, authReducer),
+  auth: persistedAuthReducer,
   students: studentsReducer,
   teachers: teachersReducer,
   courses: coursesReducer,
   enrollments: enrollmentsReducer,
+  notifications: notificationsReducer,
+  calendar: calendarReducer,
 });
 
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer);

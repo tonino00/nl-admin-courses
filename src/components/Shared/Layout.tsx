@@ -28,9 +28,11 @@ import {
   Assessment as ReportIcon,
   Person as PersonIcon,
   ExitToApp as LogoutIcon,
+  CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
+import NotificationCenter from './NotificationCenter/NotificationCenter';
 
 const drawerWidth = 240;
 
@@ -72,6 +74,7 @@ const Layout: React.FC = () => {
     { text: 'Alunos', icon: <StudentIcon />, path: '/alunos' },
     { text: 'Professores', icon: <TeacherIcon />, path: '/professores' },
     { text: 'Cursos', icon: <CourseIcon />, path: '/cursos' },
+    { text: 'Calendário', icon: <CalendarIcon />, path: '/calendario' },
     { text: 'Relatórios', icon: <ReportIcon />, path: '/relatorios' },
   ];
 
@@ -148,7 +151,10 @@ const Layout: React.FC = () => {
             </Typography>
           </Box>
           {user && (
-            <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {/* Centro de Notificações */}
+              <NotificationCenter userType={user.role || 'admin'} />
+              
               <Tooltip title="Configurações do perfil">
                 <IconButton
                   size="large"
