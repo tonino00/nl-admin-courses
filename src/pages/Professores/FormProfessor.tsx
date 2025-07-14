@@ -156,24 +156,23 @@ const FormProfessor: React.FC = () => {
   
   const [newSpecialization, setNewSpecialization] = useState('');
   
-  // Usar tipagem explícita para resolver o problema de tipo infinito
-  const form = useForm<TeacherFormData>({
+  // Usar DefaultValues para resolver o problema de tipo infinito
+  const { 
+    control, 
+    handleSubmit, 
+    reset, 
+    formState: { errors },
+    setValue,
+    watch,
+    register 
+  } = useForm({
     defaultValues: initialFormState,
     shouldUnregister: false,
     mode: 'onBlur'
   });
   
-  // Extrair as propriedades individualmente para uso
-  const control = form.control;
-  const handleSubmit = form.handleSubmit;
-  const reset = form.reset;
-  const errors = form.formState.errors;
-  const setValue = form.setValue;
-  const watch = form.watch;
-  const register = form.register;
-  
   // Definir manualmente sem usar a função watch diretamente
-  const watchSpecializations = watch('specializations') as string[] || [];
+  const watchSpecializations: string[] = watch('specializations') || [];
   
   // Buscar dados do professor para edição
   useEffect(() => {
