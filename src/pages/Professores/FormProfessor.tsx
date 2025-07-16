@@ -157,8 +157,7 @@ const FormProfessor: React.FC = () => {
   const [newSpecialization, setNewSpecialization] = useState('');
   
   // Usar DefaultValues para resolver o problema de tipo infinito
-  // Criando uma versão simplificada do formulário para evitar problemas de tipagem
-  // @ts-ignore - Ignoramos erros de tipagem aqui para evitar problemas de tipo recursivo
+  // Usando tipagem explícita para evitar recursão infinita
   const { 
     control, 
     handleSubmit, 
@@ -166,7 +165,7 @@ const FormProfessor: React.FC = () => {
     formState: { errors },
     setValue,
     register 
-  } = useForm({
+  } = useForm<TeacherFormData>({
     defaultValues: initialFormState,
     shouldUnregister: false,
     mode: 'onBlur'
@@ -227,7 +226,7 @@ const FormProfessor: React.FC = () => {
         const newSpecializations = [...specializations, newSpecialization];
         setSpecializations(newSpecializations);
         // Atualizar o valor no formulário
-        setValue('specializations', newSpecializations);
+        setValue('specializations', newSpecializations as any);
       }
       setNewSpecialization('');
     }

@@ -217,7 +217,7 @@ const AnalyticsContent: React.FC<AnalyticsContentProps> = () => {
                     fill="#8884d8"
                     dataKey="value"
                     nameKey="name"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name}: ${(percent ? (percent * 100).toFixed(0) : 0)}%`}
                   >
                     {enrollmentData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
