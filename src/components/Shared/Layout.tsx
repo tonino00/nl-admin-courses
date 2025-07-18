@@ -34,6 +34,7 @@ import {
 import { RootState } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
 import NotificationCenter from './NotificationCenter/NotificationCenter';
+import ThemeToggleButton from './ThemeToggleButton';
 
 const drawerWidth = 240;
 
@@ -158,6 +159,9 @@ const Layout: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {/* Centro de Notificações */}
               <NotificationCenter userType={user.role || 'admin'} />
+              
+              {/* Botão de alternância de tema */}
+              <ThemeToggleButton />
               
               <Tooltip title="Configurações do perfil">
                 <IconButton

@@ -10,6 +10,7 @@ import coursesReducer from './slices/coursesSlice';
 import enrollmentsReducer from './slices/enrollmentsSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import calendarReducer from './slices/calendarSlice';
+import themeReducer from './slices/themeSlice';
 
 // Configuração de persistência para o reducer de autenticação
 const authPersistConfig = {
@@ -18,14 +19,21 @@ const authPersistConfig = {
   whitelist: ['user', 'token', 'isAuthenticated'] // apenas estes campos serão persistidos
 };
 
+// Configuração de persistência para o tema
+const themePersistConfig = {
+  key: 'theme',
+  storage,
+};
+
 // Configuração de persistência para o rootReducer
 const rootPersistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth'] // apenas o state de auth será persistido
+  whitelist: ['auth', 'theme'] // persistir auth e theme
 };
 
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+const persistedThemeReducer = persistReducer(themePersistConfig, themeReducer);
 
 const rootReducer = combineReducers({
   auth: persistedAuthReducer,
@@ -35,6 +43,7 @@ const rootReducer = combineReducers({
   enrollments: enrollmentsReducer,
   notifications: notificationsReducer,
   calendar: calendarReducer,
+  theme: persistedThemeReducer,
 });
 
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer);
