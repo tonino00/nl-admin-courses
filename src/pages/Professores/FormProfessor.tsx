@@ -563,8 +563,11 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Rua"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.street}
                       helperText={errors.address?.street?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -579,8 +582,11 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Número"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.number}
                       helperText={errors.address?.number?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -595,7 +601,9 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Complemento"
                       fullWidth
+                      margin="normal"
                       value={field.value || ''}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -610,8 +618,11 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Bairro"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.district}
                       helperText={errors.address?.district?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -626,13 +637,16 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Cidade"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.city}
                       helperText={errors.address?.city?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
               </Grid>
-
+              
               <Grid item xs={12} md={2}>
                 <Controller
                   name="address.state"
@@ -642,8 +656,11 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Estado"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.state}
                       helperText={errors.address?.state?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
