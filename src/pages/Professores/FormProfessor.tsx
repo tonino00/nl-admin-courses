@@ -262,6 +262,32 @@ const FormProfessor: React.FC = () => {
     setValue('specializations', newSpecializations);
   };
 
+  // Buscar dados de endereço pelo CEP
+  const fetchAddressByCep = async (cep: string) => {
+    // Remover caracteres não numéricos
+    const cleanCep = cep.replace(/\D/g, '');
+    
+    if (cleanCep.length !== 8) return;
+    
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      
+      if (!data.erro) {
+        // Preencher os campos de endereço
+        setValue('address.street', data.logradouro);
+        setValue('address.district', data.bairro);
+        setValue('address.city', data.localidade);
+        setValue('address.state', data.uf);
+        
+        // Focar no campo de número após preencher os dados
+        document.querySelector('input[name="address.number"]')?.focus();
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+    }
+  };
+  
   // Submeter formulário
   const onSubmit = async (data: TeacherFormData) => {
     try {
@@ -634,13 +660,22 @@ const FormProfessor: React.FC = () => {
                       placeholder="00000-000"
                       fullWidth
                       required
+                      margin="normal"
                       error={!!errors.address?.zipCode}
                       helperText={errors.address?.zipCode?.message}
                       onChange={(e) => {
                         const maskedValue = maskCEP(e.target.value);
                         field.onChange(maskedValue);
                       }}
+                      onBlur={(e) => {
+                        // Quando o campo perder o foco, buscar o endereço
+                        if (e.target.value.length === 9) {
+                          fetchAddressByCep(e.target.value);
+                        }
+                        field.onBlur();
+                      }}
                       inputProps={{ maxLength: 9 }}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
