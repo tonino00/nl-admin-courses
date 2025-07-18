@@ -53,6 +53,7 @@ export interface Teacher extends Person {
   education: string;
   specializations: string[];
   courses: number[];
+  type: 'volunteer' | 'employee'; // Tipo do professor: voluntário ou funcionário
   timeClockRecords?: TimeClockRecord[];
 }
 

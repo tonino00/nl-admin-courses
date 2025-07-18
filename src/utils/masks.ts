@@ -1,44 +1,96 @@
-const maskCPF = (value: string | null) => {
+/**
+ * Aplica máscara de CPF (000.000.000-00) enquanto o usuário digita
+ * @param value Valor do campo (pode ser null ou string)
+ * @returns String formatada com máscara de CPF
+ */
+const maskCPF = (value: string | null): string => {
   if (typeof value !== 'string' || value === '') {
-    return value;
+    return '';
   }
-  const maskedValue = value
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-    .replace(/(-\d{2})\d+?$/, '$1');
+  
+  // Remove tudo que não for dígito
+  const digitsOnly = value.replace(/\D/g, '');
+  
+  // Limita a 11 dígitos
+  const cpfDigits = digitsOnly.substring(0, 11);
+  
+  // Aplica a máscara 000.000.000-00
+  let maskedValue = cpfDigits;
+  
+  if (cpfDigits.length > 3) {
+    maskedValue = cpfDigits.replace(/^(\d{3})(\d)/, '$1.$2');
+  }
+  
+  if (cpfDigits.length > 6) {
+    maskedValue = maskedValue.replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3');
+  }
+  
+  if (cpfDigits.length > 9) {
+    maskedValue = maskedValue.replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+  }
+  
   return maskedValue;
 };
 
-const maskCEP = (value: string | null) => {
+/**
+ * Aplica máscara de CEP (00000-000) enquanto o usuário digita
+ * @param value Valor do campo
+ * @returns String formatada com máscara de CEP
+ */
+const maskCEP = (value: string | null): string => {
   if (typeof value !== 'string' || value === '') {
-    return value;
+    return '';
   }
-  const maskedValue = value
-    .replace(/\D/g, '')
-    .replace(/(\d{5})(\d)/, '$1-$2')
-    .replace(/(-\d{3})\d+?$/, '$1');
+  
+  // Remove tudo que não for dígito
+  const digitsOnly = value.replace(/\D/g, '');
+  
+  // Limita a 8 dígitos
+  const cepDigits = digitsOnly.substring(0, 8);
+  
+  // Aplica a máscara 00000-000
+  let maskedValue = cepDigits;
+  
+  if (cepDigits.length > 5) {
+    maskedValue = cepDigits.replace(/^(\d{5})(\d{0,3})$/, '$1-$2');
+  }
+  
   return maskedValue;
 };
 
+/**
+ * Aplica máscara de telefone enquanto o usuário digita
+ * Suporta formatos (00) 00000-0000 (celular) e (00) 0000-0000 (fixo)
+ * @param value Valor do campo (pode ser null ou string)
+ * @returns String formatada com máscara de telefone
+ */
 const maskPhone = (value: string | null): string => {
   if (value === null || value === '') {
     return '';
   }
 
+  // Remove tudo que não for dígito
   const digitsOnly = value.replace(/\D/g, '');
-
-  let maskedValue: string;
-  if (digitsOnly.length === 11) {
-    maskedValue = digitsOnly.replace(
-      /(\d{2})(\d{1})(\d{4})(\d{4})/,
-      '($1) $2 $3-$4'
-    );
-  } else {
-    maskedValue = digitsOnly.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  
+  // Limita a no máximo 11 dígitos
+  const phoneDigits = digitsOnly.substring(0, 11);
+  
+  // Aplica máscara progressivamente conforme o usuário digita
+  let maskedValue = phoneDigits;
+  
+  if (phoneDigits.length > 2) {
+    maskedValue = phoneDigits.replace(/^(\d{2})(\d)/, '($1) $2');
   }
-
+  
+  // Telefone celular (11 dígitos)
+  if (phoneDigits.length > 7 && phoneDigits.length === 11) {
+    maskedValue = maskedValue.replace(/^\((\d{2})\) (\d{1})(\d{4})(\d{4})$/, '($1) $2 $3-$4');
+  }
+  // Telefone fixo (10 dígitos)
+  else if (phoneDigits.length > 6) {
+    maskedValue = maskedValue.replace(/^\((\d{2})\) (\d{4})(\d{0,4})$/, '($1) $2-$3');
+  }
+  
   return maskedValue;
 };
 
@@ -156,6 +208,56 @@ const checkAlpha = (char: string) => {
   }
 };
 
+/**
+ * Valida se o email está em um formato válido
+ * @param email Email a ser validado
+ * @returns true se o email for válido, false caso contrário
+ */
+const validateEmail = (email: string): boolean => {
+  if (!email || email.trim() === '') return false;
+  // Expressão regular mais robusta para validar emails
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email);
+};
+
+/**
+ * Valida se um CPF é válido
+ * @param cpf CPF a ser validado (pode ou não ter máscara)
+ * @returns true se o CPF for válido, false caso contrário
+ */
+const validateCPF = (cpf: string): boolean => {
+  // Remove caracteres não numéricos
+  cpf = cpf.replace(/\D/g, '');
+  
+  // Verifica se tem 11 dígitos
+  if (cpf.length !== 11) return false;
+  
+  // Verifica se todos os dígitos são iguais
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  
+  // Validação do primeiro dígito verificador
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cpf.charAt(i)) * (10 - i);
+  }
+  let rest = sum % 11;
+  let dv1 = rest < 2 ? 0 : 11 - rest;
+  
+  if (dv1 !== parseInt(cpf.charAt(9))) return false;
+  
+  // Validação do segundo dígito verificador
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cpf.charAt(i)) * (11 - i);
+  }
+  rest = sum % 11;
+  let dv2 = rest < 2 ? 0 : 11 - rest;
+  
+  if (dv2 !== parseInt(cpf.charAt(10))) return false;
+  
+  return true;
+};
+
 export { 
   maskCPF,
   maskCEP,
@@ -166,5 +268,7 @@ export {
   parseDateFromBR,
   maskDate,
   maskNRP,
-  checkAlpha
+  checkAlpha,
+  validateEmail,
+  validateCPF
 };

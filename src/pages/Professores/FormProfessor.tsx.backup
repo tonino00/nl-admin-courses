@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../store/hooks';
 import {
@@ -8,8 +8,8 @@ import {
   formatDateToBR,
   parseDateFromBR,
   maskDate,
-  validateCPF,
   validateEmail,
+  validateCPF,
 } from '../../utils/masks';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -67,8 +67,8 @@ const schema = yup.object().shape({
     .string()
     .required('Telefone é obrigatório')
     .matches(
-      /^\(\d{2}\)\s\d{1}\s\d{4}-\d{4}$/,
-      'Formato de telefone inválido ((00) 0 0000-0000)'
+      /^\(\d{2}\) \d{4,5}-\d{4}$/,
+      'Formato de telefone inválido ((00) 00000-0000)'
     ),
   email: yup.string().email('Email inválido').required('Email é obrigatório'),
   status: yup
@@ -79,7 +79,7 @@ const schema = yup.object().shape({
     .string()
     .oneOf(['volunteer', 'employee'])
     .required('Tipo do professor é obrigatório'),
-  bio: yup.string(),
+  bio: yup.string().required('Biografia é obrigatória'),
   education: yup.string().required('Formação acadêmica é obrigatória'),
   specializations: yup.array().of(yup.string()).required(),
   address: yup.object().shape({
@@ -119,7 +119,6 @@ const initialFormState: TeacherFormData = {
   fullName: '',
   cpf: '',
   birthDate: '',
-  type: 'volunteer',
   address: {
     street: '',
     number: '',
@@ -135,6 +134,7 @@ const initialFormState: TeacherFormData = {
   education: '',
   specializations: [] as string[],
   status: 'active' as const,
+  type: 'employee' as const, // Valor padrão: funcionário
 };
 
 // Áreas de especialização comuns para professores
@@ -188,7 +188,6 @@ const FormProfessor: React.FC = () => {
     defaultValues: initialFormState,
     shouldUnregister: false,
     mode: 'onBlur',
-    resolver: yupResolver(schema),
   });
 
   // Usando useState para rastrear especializações em vez de watch
@@ -233,6 +232,7 @@ const FormProfessor: React.FC = () => {
         education: currentTeacher.education,
         specializations: currentTeacher.specializations || [],
         status: currentTeacher.status,
+        type: currentTeacher.type || 'employee', // Usando employee como padrão se não existir
       };
 
       reset(formData);
@@ -265,13 +265,20 @@ const FormProfessor: React.FC = () => {
   // Submeter formulário
   const onSubmit = async (data: TeacherFormData) => {
     try {
+      // Converter a data do formato brasileiro para o formato ISO se necessário
+      let birthDate = data.birthDate;
+      if (birthDate && birthDate.includes('/')) {
+        // Se a data está no formato brasileiro, converter para ISO
+        birthDate = parseDateFromBR(birthDate);
+      }
+
       if (isEditMode && currentTeacher) {
         // Update existing teacher
         const updatedTeacher: Teacher = {
           id: currentTeacher.id,
           fullName: data.fullName,
           cpf: data.cpf,
-          birthDate: data.birthDate,
+          birthDate: birthDate,
           address: {
             ...data.address,
             // Garantir que o complement seja um tipo válido para Address
@@ -283,11 +290,16 @@ const FormProfessor: React.FC = () => {
           education: data.education,
           specializations: data.specializations || [],
           status: data.status,
-          type: data.type,
+          type: data.type, // Adiciona o tipo de professor (voluntário ou funcionário)
           // Manter os valores existentes para campos que não estão no formulário
           rg: currentTeacher.rg,
           documents: currentTeacher.documents,
           courses: currentTeacher.courses || [],
+          // Manter os registros de ponto apenas se for funcionário
+          timeClockRecords:
+            data.type === 'employee'
+              ? currentTeacher.timeClockRecords
+              : undefined,
         };
 
         await dispatch(updateTeacher(updatedTeacher));
@@ -296,7 +308,7 @@ const FormProfessor: React.FC = () => {
         const newTeacher: Omit<Teacher, 'id'> = {
           fullName: data.fullName,
           cpf: data.cpf,
-          birthDate: data.birthDate,
+          birthDate: birthDate,
           address: {
             ...data.address,
             // Garantir que o complement seja um tipo válido para Address
@@ -308,11 +320,13 @@ const FormProfessor: React.FC = () => {
           education: data.education,
           specializations: data.specializations || [],
           status: data.status,
-          type: data.type,
+          type: data.type, // Adiciona o tipo de professor (voluntário ou funcionário)
           // Valores padrão para campos obrigatórios não incluídos no formulário
           rg: '',
           courses: [],
           documents: [],
+          // Inicializa registros de ponto apenas se for funcionário
+          timeClockRecords: data.type === 'employee' ? [] : undefined,
         };
 
         await dispatch(createTeacher(newTeacher));
@@ -373,71 +387,52 @@ const FormProfessor: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <Controller
                   name="fullName"
-                  control={control}
-                  render={({ field }: { field: any }) => (
-                    <TextField
-                      {...field}
-                      label="Nome Completo"
-                      variant="outlined"
-                      fullWidth
-                      error={!!errors.fullName}
-                      helperText={errors.fullName?.message}
-                      margin="normal"
-                    />
-                  )}
-                />
-              </Grid>
+                      }
+                    }}
+                    inputProps={{ maxLength: 14 }}
+                  />
+                )}
+              />
+            </Grid>
 
-              <Grid item xs={12} md={3}>
-                <Controller
-                  name="cpf"
-                  control={control}
-                  render={({ field }: { field: any }) => (
-                    <TextField
-                      {...field}
-                      label="CPF"
-                      variant="outlined"
-                      fullWidth
-                      required
-                      error={
-                        !!errors.cpf ||
-                        (field.value && !validateCPF(field.value))
-                      }
-                      helperText={
-                        errors.cpf?.message ||
-                        (field.value && !validateCPF(field.value)
-                          ? 'CPF inválido'
-                          : '')
-                      }
-                      margin="normal"
-                      placeholder="000.000.000-00"
+            <Grid item xs={12} md={3}>
+              <Controller
+                name="birthDate"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="text"
+                    fullWidth
+                    label="Data de Nascimento"
+                    placeholder="DD/MM/AAAA"
+                    required
+                    error={!!errors.birthDate}
+                    // helperText={errors.birthDate?.message || 'DD/MM/AAAA'}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    onChange={(e) => {
+                      const maskedValue = maskDate(e.target.value);
+                      field.onChange(maskedValue);
+                    }}
+                    inputProps={{ maxLength: 10 }}
+                    sx={{
+                      '& .MuiInputBase-input': {
+                        '&::placeholder': {
+                          color: 'red',
+                        },
+                      },
+                    }}
+                  />
+                )}
+              />
+            </Grid>
                       onChange={(e) => {
-                        const maskedValue = maskCPF(e.target.value);
+                        const maskedValue = maskDate(e.target.value);
                         field.onChange(maskedValue);
                       }}
-                      inputProps={{ maxLength: 14 }}
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={3}>
-                <Controller
-                  name="birthDate"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      type="date"
-                      fullWidth
-                      label="Data de Nascimento"
-                      margin="normal"
-                      required
-                      error={!!errors.birthDate}
-                      helperText={errors.birthDate?.message}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
+                      inputProps={{ maxLength: 10 }}
                     />
                   )}
                 />
@@ -451,18 +446,16 @@ const FormProfessor: React.FC = () => {
                     <TextField
                       {...field}
                       label="Telefone"
-                      placeholder="(00) 0 0000-0000"
+                      placeholder="(00) 00000-0000"
                       fullWidth
                       required
-                      margin="normal"
                       error={!!errors.phone}
                       helperText={errors.phone?.message}
                       onChange={(e) => {
                         const maskedValue = maskPhone(e.target.value);
                         field.onChange(maskedValue);
                       }}
-                      inputProps={{ maxLength: 16 }}
-                      sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com outros campos
+                      inputProps={{ maxLength: 15 }}
                     />
                   )}
                 />
@@ -479,10 +472,30 @@ const FormProfessor: React.FC = () => {
                       type="email"
                       fullWidth
                       required
-                      margin="normal"
-                      error={!!errors.email}
-                      helperText={errors.email?.message}
-                      sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com o campo de telefone
+                      error={
+                        !!errors.email ||
+                        (field.value && !validateEmail(field.value))
+                      }
+                      helperText={
+                        errors.email?.message ||
+                        (field.value && !validateEmail(field.value)
+                          ? 'Email inválido'
+                          : '')
+                      }
+                      onChange={(e) => {
+                        const emailValue = e.target.value;
+                        field.onChange(emailValue);
+                      }}
+                      onBlur={(e) => {
+                        field.onBlur();
+                        if (field.value && !validateEmail(field.value)) {
+                          // Validação visual para email inválido
+                          setValue('email', field.value, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          });
+                        }
+                      }}
                     />
                   )}
                 />
@@ -509,11 +522,11 @@ const FormProfessor: React.FC = () => {
                   name="type"
                   control={control}
                   render={({ field }: { field: any }) => (
-                    <FormControl fullWidth error={!!errors.type} required>
-                      <InputLabel>Tipo</InputLabel>
-                      <Select {...field} label="Tipo">
-                        <MenuItem value="volunteer">Voluntário</MenuItem>
+                    <FormControl fullWidth error={!!errors.type}>
+                      <InputLabel>Tipo de Professor</InputLabel>
+                      <Select {...field} label="Tipo de Professor">
                         <MenuItem value="employee">Funcionário</MenuItem>
+                        <MenuItem value="volunteer">Voluntário</MenuItem>
                       </Select>
                     </FormControl>
                   )}
@@ -537,6 +550,7 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Rua"
                       fullWidth
+                      required
                       error={!!errors.address?.street}
                       helperText={errors.address?.street?.message}
                     />
@@ -553,6 +567,7 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Número"
                       fullWidth
+                      required
                       error={!!errors.address?.number}
                       helperText={errors.address?.number?.message}
                     />
@@ -584,6 +599,7 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Bairro"
                       fullWidth
+                      required
                       error={!!errors.address?.district}
                       helperText={errors.address?.district?.message}
                     />
@@ -600,6 +616,7 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Cidade"
                       fullWidth
+                      required
                       error={!!errors.address?.city}
                       helperText={errors.address?.city?.message}
                     />
@@ -616,6 +633,7 @@ const FormProfessor: React.FC = () => {
                       {...field}
                       label="Estado"
                       fullWidth
+                      required
                       error={!!errors.address?.state}
                       helperText={errors.address?.state?.message}
                     />
@@ -666,10 +684,16 @@ const FormProfessor: React.FC = () => {
                       multiline
                       rows={3}
                       required
-                      margin="normal"
-                      error={!!errors.education}
-                      helperText={errors.education?.message}
-                      sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com o campo de biografia
+                      error={!!errors.education || (field.value?.length >= 500)}
+                      helperText={
+                        errors.education?.message
+                          ? errors.education.message
+                          : `${field.value?.length || 0}/500 caracteres${field.value?.length >= 500 ? ' - Limite atingido!' : ''}`
+                      }
+                      inputProps={{ maxLength: 500 }}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                      }}
                     />
                   )}
                 />
@@ -686,22 +710,31 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       multiline
                       rows={3}
-                      margin="normal"
-                      error={!!errors.bio}
-                      helperText={errors.bio?.message}
-                      sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com outros campos
+                      error={!!errors.bio || (field.value?.length >= 1000)}
+                      helperText={
+                        errors.bio?.message
+                          ? errors.bio.message
+                          : `${field.value?.length || 0}/1000 caracteres${field.value?.length >= 1000 ? ' - Limite atingido!' : ''}`
+                      }
+                      inputProps={{ maxLength: 1000 }}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                      }}
                     />
                   )}
                 />
               </Grid>
 
               <Grid item xs={12}>
-                <Typography variant="subtitle1" gutterBottom>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                   Especializações
                 </Typography>
+                <Divider sx={{ mb: 2 }} />
+              </Grid>
 
+              <Grid item xs={12} md={8}>
                 <Box display="flex" alignItems="center" mb={2} gap={1}>
-                  <FormControl sx={{ width: 350 }}>
+                  <FormControl sx={{ width: '350px' }}>
                     <InputLabel>Adicionar Especialização</InputLabel>
                     <Select
                       value={newSpecialization}

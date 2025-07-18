@@ -175,6 +175,32 @@
       "documents": [],
       "courses": [],
       "id": 3
+    },
+    {
+      "id": 4,
+      "fullName": "Antonino Gama",
+      "cpf": "081.382.034-04",
+      "birthDate": "1990-07-25",
+      "address": {
+        "street": "13",
+        "number": "518",
+        "district": "Ponta grossa",
+        "city": "Maceió",
+        "state": "AL",
+        "zipCode": "57014-140"
+      },
+      "phone": "(82) 9 9912-6305",
+      "email": "tom@gmail.com",
+      "bio": "",
+      "education": "Literatura",
+      "specializations": [
+        "Sociologia"
+      ],
+      "status": "active",
+      "type": "volunteer",
+      "rg": "",
+      "documents": [],
+      "courses": []
     }
   ],
   "courses": [

@@ -167,15 +167,17 @@ const DetalhesProfessor: React.FC = () => {
         >
           Gerenciar Cursos
         </Button>
-        <Button
-          variant="outlined"
-          color="secondary"
-          startIcon={<AccessTimeIcon />}
-          onClick={() => navigate(`/professores/${id}/ponto`)}
-          sx={{ mr: 1 }}
-        >
-          Registro de Ponto
-        </Button>
+        {currentTeacher.type === 'employee' && (
+          <Button
+            variant="outlined"
+            color="secondary"
+            startIcon={<AccessTimeIcon />}
+            onClick={() => navigate(`/professores/${id}/ponto`)}
+            sx={{ mr: 1 }}
+          >
+            Registro de Ponto
+          </Button>
+        )}
         <Button
           variant="contained"
           color="primary"
@@ -212,6 +214,13 @@ const DetalhesProfessor: React.FC = () => {
                 icon={currentTeacher.status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
                 label={currentTeacher.status === 'active' ? 'Ativo' : 'Inativo'}
                 color={currentTeacher.status === 'active' ? 'success' : 'error'}
+                sx={{ mr: 2 }}
+              />
+              
+              <Chip
+                label={currentTeacher.type === 'employee' ? 'Funcionário' : 'Voluntário'}
+                color="primary"
+                variant="outlined"
                 sx={{ mr: 2 }}
               />
               
