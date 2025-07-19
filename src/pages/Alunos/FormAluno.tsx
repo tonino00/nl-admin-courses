@@ -16,6 +16,7 @@ import {
   Divider,
   Alert,
   IconButton,
+  FormHelperText,
 } from '@mui/material';
 // Removido DatePicker devido a problemas de compatibilidade
 import {
@@ -25,8 +26,6 @@ import {
   CloudUpload as UploadIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
-import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
 import moment from 'moment';
 import { useDropzone } from 'react-dropzone';
 import { RootState } from '../../store';
@@ -39,50 +38,15 @@ import {
 import { Student, Address } from '../../types';
 import {
   maskCPF,
-  maskPhone,
-  formatDateToBR,
-  parseDateFromBR,
-  maskDate,
   maskCEP,
+  maskPhone,
+  maskRG,
+  validateCPF,
+  validateEmail,
+  validateRG,
 } from '../../utils/masks';
 
-// Validação com Yup
-const schema = yup.object().shape({
-  fullName: yup.string().required('Nome completo é obrigatório'),
-  mothersName: yup.string().required('Nome da mãe é obrigatório'),
-  cpf: yup
-    .string()
-    .required('CPF é obrigatório')
-    .matches(
-      /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
-      'Formato de CPF inválido (000.000.000-00)'
-    ),
-  rg: yup.string().required('RG é obrigatório'),
-  birthDate: yup.string().required('Data de nascimento é obrigatória'),
-  phone: yup
-    .string()
-    .required('Telefone é obrigatório')
-    .matches(
-      /^\(\d{2}\) \d{4,5}-\d{4}$/,
-      'Formato de telefone inválido ((00) 00000-0000)'
-    ),
-  email: yup.string().email('Email inválido').required('Email é obrigatório'),
-  status: yup
-    .string()
-    .oneOf(['active', 'inactive'])
-    .required('Status é obrigatório'),
-  address: yup.object().shape({
-    street: yup.string().required('Rua é obrigatória'),
-    number: yup.string().required('Número é obrigatório'),
-    district: yup.string().required('Bairro é obrigatório'),
-    city: yup.string().required('Cidade é obrigatória'),
-    state: yup.string().required('Estado é obrigatório'),
-    zipCode: yup
-      .string()
-      .required('CEP é obrigatório')
-      .matches(/^\d{5}-\d{3}$/, 'Formato de CEP inválido (00000-000)'),
-  }),
-});
+// Implementação das validações manuais para substituir o Yup
 
 type StudentFormData = Omit<
   Student,
@@ -130,10 +94,74 @@ const FormAluno: React.FC = () => {
     reset,
     formState: { errors },
     setValue,
+    register,
+    getValues,
   } = useForm<StudentFormData>({
-    resolver: yupResolver(schema),
     defaultValues: initialFormState,
+    shouldUnregister: false,
+    mode: 'onBlur',
   });
+  
+  // Configurando validações manuais para os campos do formulário
+  useEffect(() => {
+    // Nome completo
+    register('fullName', {
+      required: 'Nome completo é obrigatório',
+    });
+    
+    // Nome da mãe
+    register('mothersName', {
+      required: 'Nome da mãe é obrigatório',
+    });
+    
+    // CPF
+    register('cpf', {
+      required: 'CPF é obrigatório',
+      validate: (value) => validateCPF(value) || 'CPF inválido',
+    });
+    
+    // RG
+    register('rg', {
+      required: 'RG é obrigatório',
+    });
+    
+    // Data de nascimento
+    register('birthDate', {
+      required: 'Data de nascimento é obrigatória',
+    });
+    
+    // Telefone
+    register('phone', {
+      required: 'Telefone é obrigatório',
+      pattern: {
+        value: /^\(\d{2}\)\s\d{1}\s\d{4}-\d{4}$/,
+        message: 'Formato de telefone inválido ((00) 0 0000-0000)',
+      },
+    });
+    
+    // Email
+    register('email', {
+      required: 'Email é obrigatório',
+      validate: (value) => validateEmail(value) || 'Email inválido',
+    });
+    
+    // Status
+    register('status', { required: 'Status é obrigatório' });
+    
+    // Campos do endereço
+    register('address.street', { required: 'Rua é obrigatória' });
+    register('address.number', { required: 'Número é obrigatório' });
+    register('address.district', { required: 'Bairro é obrigatório' });
+    register('address.city', { required: 'Cidade é obrigatória' });
+    register('address.state', { required: 'Estado é obrigatório' });
+    register('address.zipCode', {
+      required: 'CEP é obrigatório',
+      pattern: {
+        value: /^\d{5}-\d{3}$/,
+        message: 'Formato de CEP inválido (00000-000)',
+      },
+    });
+  }, [register]);
 
   // Buscar dados do aluno para edição
   useEffect(() => {
@@ -308,11 +336,13 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="fullName"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Nome Completo"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.fullName}
                       helperText={errors.fullName?.message}
                     />
@@ -324,11 +354,13 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="mothersName"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Nome da Mãe"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.mothersName}
                       helperText={errors.mothersName?.message}
                     />
@@ -340,14 +372,26 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="cpf"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="CPF"
-                      placeholder="000.000.000-00"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.cpf}
-                      helperText={errors.cpf?.message}
+                      helperText={
+                        errors.cpf?.message ||
+                        (field.value && !validateCPF(field.value)
+                          ? 'CPF inválido'
+                          : '')
+                      }
+                      placeholder="000.000.000-00"
+                      onChange={(e) => {
+                        const maskedValue = maskCPF(e.target.value);
+                        field.onChange(maskedValue);
+                      }}
+                      inputProps={{ maxLength: 14 }}
                     />
                   )}
                 />
@@ -357,13 +401,26 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="rg"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="RG"
+                      placeholder="00.000.000-0"
                       fullWidth
-                      error={!!errors.rg}
-                      helperText={errors.rg?.message}
+                      required
+                      margin="normal"
+                      error={!!errors.rg || (!!field.value && !validateRG(field.value))}
+                      helperText={
+                        errors.rg?.message ||
+                        (field.value && !validateRG(field.value)
+                          ? 'RG inválido'
+                          : '')
+                      }
+                      onChange={(e) => {
+                        const maskedValue = maskRG(e.target.value);
+                        field.onChange(maskedValue);
+                      }}
+                      inputProps={{ maxLength: 12 }}
                     />
                   )}
                 />
@@ -376,24 +433,16 @@ const FormAluno: React.FC = () => {
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      type="text"
+                      type="date"
                       fullWidth
                       label="Data de Nascimento"
+                      margin="normal"
+                      required
                       error={!!errors.birthDate}
-                      helperText={errors.birthDate?.message || 'DD/MM/AAAA'}
+                      helperText={errors.birthDate?.message}
                       InputLabelProps={{
                         shrink: true,
                       }}
-                      value={field.value ? formatDateToBR(field.value) : ''}
-                      onChange={(e) => {
-                        const maskedValue = maskDate(e.target.value);
-                        const parsedDate =
-                          maskedValue.length === 10
-                            ? parseDateFromBR(maskedValue)
-                            : '';
-                        field.onChange(parsedDate || maskedValue);
-                      }}
-                      inputProps={{ maxLength: 10 }}
                     />
                   )}
                 />
@@ -403,14 +452,22 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="phone"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Telefone"
-                      placeholder="(00) 00000-0000"
+                      placeholder="(00) 0 0000-0000"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.phone}
                       helperText={errors.phone?.message}
+                      onChange={(e) => {
+                        const maskedValue = maskPhone(e.target.value);
+                        field.onChange(maskedValue);
+                      }}
+                      inputProps={{ maxLength: 16 }}
+                      sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com outros campos
                     />
                   )}
                 />
@@ -420,30 +477,36 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="email"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Email"
                       type="email"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.email}
                       helperText={errors.email?.message}
+                      sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com outros campos
                     />
                   )}
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={3}>
                 <Controller
                   name="status"
                   control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.status}>
+                  render={({ field }: { field: any }) => (
+                    <FormControl fullWidth error={!!errors.status} margin="normal">
                       <InputLabel>Status</InputLabel>
-                      <Select {...field} label="Status">
+                      <Select {...field} label="Status" required>
                         <MenuItem value="active">Ativo</MenuItem>
                         <MenuItem value="inactive">Inativo</MenuItem>
                       </Select>
+                      {errors.status && (
+                        <FormHelperText error>{errors.status.message}</FormHelperText>
+                      )}
                     </FormControl>
                   )}
                 />
@@ -461,7 +524,7 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.street"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Rua"
@@ -470,7 +533,6 @@ const FormAluno: React.FC = () => {
                       margin="normal"
                       error={!!errors.address?.street}
                       helperText={errors.address?.street?.message}
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -480,7 +542,7 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.number"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Número"
@@ -489,7 +551,6 @@ const FormAluno: React.FC = () => {
                       margin="normal"
                       error={!!errors.address?.number}
                       helperText={errors.address?.number?.message}
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -499,13 +560,12 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.complement"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField 
                       {...field} 
                       label="Complemento" 
                       fullWidth 
                       margin="normal"
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -515,7 +575,7 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.district"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Bairro"
@@ -524,7 +584,6 @@ const FormAluno: React.FC = () => {
                       margin="normal"
                       error={!!errors.address?.district}
                       helperText={errors.address?.district?.message}
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -534,7 +593,7 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.city"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Cidade"
@@ -543,7 +602,6 @@ const FormAluno: React.FC = () => {
                       margin="normal"
                       error={!!errors.address?.city}
                       helperText={errors.address?.city?.message}
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -553,7 +611,7 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.state"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="Estado"
@@ -562,7 +620,6 @@ const FormAluno: React.FC = () => {
                       margin="normal"
                       error={!!errors.address?.state}
                       helperText={errors.address?.state?.message}
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -572,7 +629,7 @@ const FormAluno: React.FC = () => {
                 <Controller
                   name="address.zipCode"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <TextField
                       {...field}
                       label="CEP"
@@ -594,7 +651,6 @@ const FormAluno: React.FC = () => {
                         field.onBlur();
                       }}
                       inputProps={{ maxLength: 9 }}
-                      sx={{ mb: 2 }}
                     />
                   )}
                 />

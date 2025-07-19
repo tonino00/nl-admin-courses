@@ -258,17 +258,83 @@ const validateCPF = (cpf: string): boolean => {
   return true;
 };
 
+/**
+ * Aplica máscara de RG (00.000.000-0) enquanto o usuário digita
+ * @param value Valor do campo (pode ser null ou string)
+ * @returns String formatada com máscara de RG
+ */
+const maskRG = (value: string | null): string => {
+  if (typeof value !== 'string' || value === '') {
+    return '';
+  }
+  
+  // Remove tudo que não for dígito
+  const digitsOnly = value.replace(/\D/g, '');
+  
+  // Limita a 9 dígitos (padrão mais comum para RG)
+  const rgDigits = digitsOnly.substring(0, 9);
+  
+  // Aplica a máscara 00.000.000-0
+  let maskedValue = rgDigits;
+  
+  if (rgDigits.length > 2) {
+    maskedValue = rgDigits.replace(/^(\d{2})(\d)/, '$1.$2');
+  }
+  
+  if (rgDigits.length > 5) {
+    maskedValue = maskedValue.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+  }
+  
+  if (rgDigits.length > 8) {
+    maskedValue = maskedValue.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+  }
+  
+  return maskedValue;
+};
+
+/**
+ * Valida se um RG está em formato válido
+ * @param rg RG a ser validado
+ * @returns true se o RG for válido, false caso contrário
+ */
+const validateRG = (rg: string): boolean => {
+  // Regex para validar o formato do RG com ou sem máscara
+  // Formato esperado: 00.000.000-0 ou 000000000
+  // Esta validação é básica e verifica apenas o formato, não a validade numérica
+  const rgRegex = /^(\d{2}\.\d{3}\.\d{3}-\d{1}|\d{8,9})$/;
+  
+  if (!rg) return false;
+  
+  // Remove caracteres não numéricos para verificar o tamanho
+  const cleanRG = rg.replace(/\D/g, '');
+  
+  // RG deve ter entre 8 e 9 dígitos (dependendo do estado)
+  if (cleanRG.length < 8 || cleanRG.length > 9) {
+    return false;
+  }
+  
+  // Verifica se o formato com máscara está correto
+  if (rg.includes('.') || rg.includes('-')) {
+    return rgRegex.test(rg);
+  }
+  
+  // Se não tiver pontuação, deve ter entre 8 e 9 dígitos numéricos
+  return /^\d{8,9}$/.test(cleanRG);
+};
+
 export { 
   maskCPF,
   maskCEP,
   maskPhone, 
-  maskOnlyNum, 
+  maskOnlyNum,
   maskCNS,
-  formatDateToBR, 
+  formatDateToBR,
   parseDateFromBR,
   maskDate,
   maskNRP,
   checkAlpha,
   validateEmail,
-  validateCPF
+  validateCPF,
+  maskRG,
+  validateRG
 };
