@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense, useTransition } from 'react';
+import React, { useEffect, lazy, useTransition, useState } from 'react';
 import { Routes as RouterRoutes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../store/hooks';
@@ -8,13 +8,9 @@ import { RootState } from '../store';
 
 // Layouts
 import Layout from '../components/Shared/Layout';
+import LazyComponent from '../components/LazyComponent';
 
-// Componente de loading para o Suspense
-const LoadingComponent = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <CircularProgress />
-  </Box>
-);
+// Componente de loading foi movido para o LazyComponent
 
 // Implementando lazy loading para todas as páginas
 // Pages
@@ -82,7 +78,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading || isPending) {
     // Mostra o componente de loading tanto para carregamento da autenticação quanto para transições pendentes
-    return <LoadingComponent />;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return isAuthenticated ? <>{children}</> : null;
@@ -92,7 +92,7 @@ const Routes = () => {
   return (
     <RouterRoutes>
       {/* Rota pública para login */}
-      <Route path="/login" element={<Suspense fallback={<LoadingComponent />}><Login /></Suspense>} />
+      <Route path="/login" element={<LazyComponent><Login /></LazyComponent>} />
 
       {/* Rotas protegidas - necessitam autenticação */}
       <Route
@@ -104,44 +104,48 @@ const Routes = () => {
         }
       >
         {/* Dashboard */}
-        <Route index element={<Suspense fallback={<LoadingComponent />}><Dashboard /></Suspense>} />
-        
+        <Route index element={
+                <LazyComponent>
+                  <Dashboard />
+                </LazyComponent>
+              } />
+
         {/* Calendário */}
-        <Route path="calendario" element={<Suspense fallback={<LoadingComponent />}><AcademicCalendar /></Suspense>} />
+        <Route path="calendario" element={<LazyComponent><AcademicCalendar /></LazyComponent>} />
 
         {/* Rotas de Alunos */}
         <Route path="alunos">
-          <Route index element={<Suspense fallback={<LoadingComponent />}><ListaAlunos /></Suspense>} />
-          <Route path="cadastro" element={<Suspense fallback={<LoadingComponent />}><FormAluno /></Suspense>} />
-          <Route path="editar/:id" element={<Suspense fallback={<LoadingComponent />}><FormAluno /></Suspense>} />
-          <Route path=":id" element={<Suspense fallback={<LoadingComponent />}><DetalhesAluno /></Suspense>} />
+          <Route index element={<LazyComponent><ListaAlunos /></LazyComponent>} />
+          <Route path="cadastro" element={<LazyComponent><FormAluno /></LazyComponent>} />
+          <Route path="editar/:id" element={<LazyComponent><FormAluno /></LazyComponent>} />
+          <Route path=":id" element={<LazyComponent><DetalhesAluno /></LazyComponent>} />
         </Route>
 
         {/* Rotas de Professores */}
         <Route path="professores">
-          <Route index element={<Suspense fallback={<LoadingComponent />}><ListaProfessores /></Suspense>} />
-          <Route path="cadastro" element={<Suspense fallback={<LoadingComponent />}><FormProfessor /></Suspense>} />
-          <Route path="editar/:id" element={<Suspense fallback={<LoadingComponent />}><FormProfessor /></Suspense>} />
-          <Route path=":id" element={<Suspense fallback={<LoadingComponent />}><DetalhesProfessor /></Suspense>} />
-          <Route path=":id/cursos" element={<Suspense fallback={<LoadingComponent />}><CursosProfessor /></Suspense>} />
-          <Route path=":id/ponto" element={<Suspense fallback={<LoadingComponent />}><RegistroPonto /></Suspense>} />
+          <Route index element={<LazyComponent><ListaProfessores /></LazyComponent>} />
+          <Route path="cadastro" element={<LazyComponent><FormProfessor /></LazyComponent>} />
+          <Route path="editar/:id" element={<LazyComponent><FormProfessor /></LazyComponent>} />
+          <Route path=":id" element={<LazyComponent><DetalhesProfessor /></LazyComponent>} />
+          <Route path=":id/cursos" element={<LazyComponent><CursosProfessor /></LazyComponent>} />
+          <Route path=":id/ponto" element={<LazyComponent><RegistroPonto /></LazyComponent>} />
         </Route>
 
         {/* Rotas de Cursos */}
         <Route path="cursos">
-          <Route index element={<Suspense fallback={<LoadingComponent />}><ListaCursos /></Suspense>} />
-          <Route path="cadastro" element={<Suspense fallback={<LoadingComponent />}><FormCurso /></Suspense>} />
-          <Route path="editar/:id" element={<Suspense fallback={<LoadingComponent />}><FormCurso /></Suspense>} />
-          <Route path=":id" element={<Suspense fallback={<LoadingComponent />}><DetalhesCurso /></Suspense>} />
-          <Route path=":id/frequencia-avaliacao" element={<Suspense fallback={<LoadingComponent />}><FrequenciaAvaliacao /></Suspense>} />
-          <Route path=":id/matricular-alunos" element={<Suspense fallback={<LoadingComponent />}><MatricularAlunos /></Suspense>} />
-          <Route path=":courseId/certificado/:studentId" element={<Suspense fallback={<LoadingComponent />}><Certificado /></Suspense>} />
+          <Route index element={<LazyComponent><ListaCursos /></LazyComponent>} />
+          <Route path="cadastro" element={<LazyComponent><FormCurso /></LazyComponent>} />
+          <Route path="editar/:id" element={<LazyComponent><FormCurso /></LazyComponent>} />
+          <Route path=":id" element={<LazyComponent><DetalhesCurso /></LazyComponent>} />
+          <Route path=":id/frequencia-avaliacao" element={<LazyComponent><FrequenciaAvaliacao /></LazyComponent>} />
+          <Route path=":id/matricular-alunos" element={<LazyComponent><MatricularAlunos /></LazyComponent>} />
+          <Route path=":courseId/certificado/:studentId" element={<LazyComponent><Certificado /></LazyComponent>} />
         </Route>
 
         {/* Rotas de Relatórios */}
         <Route path="relatorios">
-          <Route index element={<Suspense fallback={<LoadingComponent />}><RelatorioDesempenho /></Suspense>} />
-          <Route path="desempenho" element={<Suspense fallback={<LoadingComponent />}><RelatorioDesempenho /></Suspense>} />
+          <Route index element={<LazyComponent><RelatorioDesempenho /></LazyComponent>} />
+          <Route path="desempenho" element={<LazyComponent><RelatorioDesempenho /></LazyComponent>} />
         </Route>
 
         {/* Rota padrão - redireciona para dashboard */}

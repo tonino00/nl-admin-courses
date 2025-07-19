@@ -146,25 +146,25 @@ const FormProfessor: React.FC = () => {
     shouldUnregister: false,
     mode: 'onBlur',
   });
-  
+
   // Configurando validações manuais para os campos do formulário
   useEffect(() => {
     // Nome completo
     register('fullName', {
       required: 'Nome completo é obrigatório',
     });
-    
+
     // CPF
     register('cpf', {
       required: 'CPF é obrigatório',
       validate: (value) => validateCPF(value) || 'CPF inválido',
     });
-    
+
     // Data de nascimento
     register('birthDate', {
       required: 'Data de nascimento é obrigatória',
     });
-    
+
     // Telefone
     register('phone', {
       required: 'Telefone é obrigatório',
@@ -173,19 +173,21 @@ const FormProfessor: React.FC = () => {
         message: 'Formato de telefone inválido ((00) 0 0000-0000)',
       },
     });
-    
+
     // Email
     register('email', {
       required: 'Email é obrigatório',
       validate: (value) => validateEmail(value) || 'Email inválido',
     });
-    
+
     // Demais campos principais
     register('status', { required: 'Status é obrigatório' });
     register('type', { required: 'Tipo do professor é obrigatório' });
     register('education', { required: 'Formação acadêmica é obrigatória' });
-    register('specializations', { required: 'Especializações são obrigatórias' });
-    
+    register('specializations', {
+      required: 'Especializações são obrigatórias',
+    });
+
     // Campos do endereço
     register('address.street', { required: 'Rua é obrigatória' });
     register('address.number', { required: 'Número é obrigatório' });
@@ -200,7 +202,6 @@ const FormProfessor: React.FC = () => {
       },
     });
   }, [register]);
-  
 
   // Usando useState para rastrear especializações em vez de watch
   const [specializations, setSpecializations] = useState<string[]>([]);
@@ -815,9 +816,10 @@ const FormProfessor: React.FC = () => {
               </Grid>
 
               <Grid item xs={12}>
-                <Typography variant="subtitle1" gutterBottom>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                   Especializações
                 </Typography>
+                <Divider sx={{ mb: 2 }} />
 
                 {/* Campo oculto para armazenar especializações e evitar problemas de tipagem */}
                 <input
