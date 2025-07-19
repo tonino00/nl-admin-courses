@@ -100,8 +100,7 @@
     {
       "id": 2,
       "fullName": "Fernanda Lima",
-      "cpf": "555.666.777-88",
-      "rg": "55.666.777-8",
+      "cpf": "605.874.260-98",
       "birthDate": "1985-03-22",
       "address": {
         "street": "Rua Oscar Freire",
@@ -112,13 +111,16 @@
         "state": "SP",
         "zipCode": "01426-001"
       },
-      "phone": "(11) 95555-6666",
+      "phone": "(82) 9 9912-6406",
       "email": "fernanda.lima@email.com",
-      "status": "active",
-      "specialization": [
-        "Basic",
-        "Intermediate"
+      "bio": "teste",
+      "education": "Licenciatura",
+      "specializations": [
+        "Artes"
       ],
+      "status": "active",
+      "type": "employee",
+      "rg": "55.666.777-8",
       "documents": [
         {
           "id": 4,
@@ -126,31 +128,10 @@
           "url": "https://randomuser.me/api/portraits/women/10.jpg"
         }
       ],
-      "assignedCourses": [
-        2
-      ],
-      "bio": "teste",
-      "education": "Licenciatura",
-      "specializations": [
-        "Artes"
-      ],
-      "timeClockRecords": [
-        {
-          "id": 1752447128469,
-          "date": "2025-07-13",
-          "checkIn": "19:52",
-          "checkOut": "19:52"
-        },
-        {
-          "id": 1752503354239,
-          "date": "2025-07-14",
-          "checkIn": "11:29",
-          "checkOut": "11:29",
-          "comments": "Aula de informática - básica"
-        }
-      ]
+      "courses": []
     },
     {
+      "id": 3,
       "fullName": "Antonino Caetano Gama",
       "cpf": "081.382.034-04",
       "birthDate": "1990-07-25",
@@ -163,7 +144,7 @@
         "state": "Al",
         "zipCode": "57014-140"
       },
-      "phone": "(00) 00000-0000",
+      "phone": "(82) 9 9912-6405",
       "email": "antoninocgama@gmail.com",
       "bio": "Ola",
       "education": "Engenheiro de Software",
@@ -171,10 +152,10 @@
         "Programação"
       ],
       "status": "active",
+      "type": "volunteer",
       "rg": "",
       "documents": [],
-      "courses": [],
-      "id": 3
+      "courses": []
     },
     {
       "id": 4,

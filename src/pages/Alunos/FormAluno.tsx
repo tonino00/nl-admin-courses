@@ -43,6 +43,7 @@ import {
   formatDateToBR,
   parseDateFromBR,
   maskDate,
+  maskCEP,
 } from '../../utils/masks';
 
 // Validação com Yup
@@ -187,6 +188,35 @@ const FormAluno: React.FC = () => {
       setPreviewUrls((prevUrls) => [...prevUrls, ...newPreviewUrls]);
     },
   });
+
+  // Buscar dados de endereço pelo CEP
+  const fetchAddressByCep = async (cep: string) => {
+    // Remover caracteres não numéricos
+    const cleanCep = cep.replace(/\D/g, '');
+    
+    if (cleanCep.length !== 8) return;
+    
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      
+      if (!data.erro) {
+        // Preencher os campos de endereço
+        setValue('address.street', data.logradouro);
+        setValue('address.district', data.bairro);
+        setValue('address.city', data.localidade);
+        setValue('address.state', data.uf);
+        
+        // Focar no campo de número após preencher os dados
+        setTimeout(() => {
+          const numberField = document.querySelector('input[name="address.number"]') as HTMLInputElement;
+          if (numberField) numberField.focus();
+        }, 0);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+    }
+  };
 
   // Submeter formulário
   const onSubmit = async (data: StudentFormData) => {
@@ -436,8 +466,11 @@ const FormAluno: React.FC = () => {
                       {...field}
                       label="Rua"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.street}
                       helperText={errors.address?.street?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -452,8 +485,11 @@ const FormAluno: React.FC = () => {
                       {...field}
                       label="Número"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.number}
                       helperText={errors.address?.number?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -464,7 +500,13 @@ const FormAluno: React.FC = () => {
                   name="address.complement"
                   control={control}
                   render={({ field }) => (
-                    <TextField {...field} label="Complemento" fullWidth />
+                    <TextField 
+                      {...field} 
+                      label="Complemento" 
+                      fullWidth 
+                      margin="normal"
+                      sx={{ mb: 2 }}
+                    />
                   )}
                 />
               </Grid>
@@ -478,8 +520,11 @@ const FormAluno: React.FC = () => {
                       {...field}
                       label="Bairro"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.district}
                       helperText={errors.address?.district?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -494,8 +539,11 @@ const FormAluno: React.FC = () => {
                       {...field}
                       label="Cidade"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.city}
                       helperText={errors.address?.city?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -510,8 +558,11 @@ const FormAluno: React.FC = () => {
                       {...field}
                       label="Estado"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.state}
                       helperText={errors.address?.state?.message}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
@@ -527,8 +578,23 @@ const FormAluno: React.FC = () => {
                       label="CEP"
                       placeholder="00000-000"
                       fullWidth
+                      required
+                      margin="normal"
                       error={!!errors.address?.zipCode}
                       helperText={errors.address?.zipCode?.message}
+                      onChange={(e) => {
+                        const maskedValue = maskCEP(e.target.value);
+                        field.onChange(maskedValue);
+                      }}
+                      onBlur={(e) => {
+                        // Quando o campo perder o foco, buscar o endereço
+                        if (e.target.value.length === 9) {
+                          fetchAddressByCep(e.target.value);
+                        }
+                        field.onBlur();
+                      }}
+                      inputProps={{ maxLength: 9 }}
+                      sx={{ mb: 2 }}
                     />
                   )}
                 />
