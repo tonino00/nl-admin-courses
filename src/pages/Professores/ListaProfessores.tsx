@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,100 @@ import { RootState } from '../../store';
 import { fetchTeachers, deleteTeacher } from '../../store/slices/teachersSlice';
 import { Teacher } from '../../types';
 
+// Componente de célula para especializações memoizado
+interface SpecializationCellProps {
+  teacher: Teacher;
+}
+
+const SpecializationCell = memo(({ teacher }: SpecializationCellProps) => {
+  const renderSpecializations = () => {
+    if (!teacher.specializations || teacher.specializations.length === 0) {
+      return <Chip label="Sem especialização" size="small" color="default" />;
+    }
+
+    return teacher.specializations.map((spec: string) => {
+      // Criar o objeto props sem a key para evitar o warning
+      const chipProps = {
+        label: spec,
+        size: "small" as const,
+        color: "primary" as const,
+        sx: { marginRight: 0.5, marginBottom: 0.5 }
+      };
+      
+      // Passar a key separadamente e espalhar o resto das props
+      return <Chip key={spec} {...chipProps} />;
+    });
+  };
+
+  return (
+    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+      {renderSpecializations()}
+    </Box>
+  );
+});
+
+// Componente de célula para status memoizado
+interface StatusCellProps {
+  value: string;
+}
+
+const StatusCell = memo(({ value }: StatusCellProps) => {
+  return (
+    <Chip
+      icon={value === 'active' ? <ActiveIcon /> : <InactiveIcon />}
+      label={value === 'active' ? 'Ativo' : 'Inativo'}
+      color={value === 'active' ? 'success' : 'error'}
+      size="small"
+    />
+  );
+});
+
+// Componente de célula para ações memoizado
+interface ActionsCellProps {
+  id: number;
+  onView: (id: number) => void;
+  onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
+}
+
+const ActionsCell = memo(({ id, onView, onEdit, onDelete }: ActionsCellProps) => {
+  const handleView = useCallback(() => onView(id), [id, onView]);
+  const handleEdit = useCallback(() => onEdit(id), [id, onEdit]);
+  const handleDelete = useCallback(() => onDelete(id), [id, onDelete]);
+  
+  return (
+    <Box>
+      <Tooltip title="Visualizar">
+        <IconButton
+          size="small"
+          color="primary"
+          onClick={handleView}
+        >
+          <ViewIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Editar">
+        <IconButton
+          size="small"
+          color="secondary"
+          onClick={handleEdit}
+        >
+          <EditIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Excluir">
+        <IconButton
+          size="small"
+          color="error"
+          onClick={handleDelete}
+        >
+          <DeleteIcon />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+});
+
 const ListaProfessores: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -47,58 +141,66 @@ const ListaProfessores: React.FC = () => {
     dispatch(fetchTeachers());
   }, [dispatch]);
   
+  // Memoizar a lógica de filtragem para melhor desempenho
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = teachers.filter(
-        (teacher: Teacher) =>
-          teacher.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          teacher.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (teacher.specializations && 
-            teacher.specializations.some((spec: string) => 
-              spec.toLowerCase().includes(searchTerm.toLowerCase())
-            ))
-      );
-      setFilteredTeachers(filtered);
-    } else {
-      setFilteredTeachers(teachers);
-    }
+    // Usar uma função memoizada para filtragem
+    const filterTeachers = () => {
+      if (searchTerm) {
+        return teachers.filter(
+          (teacher: Teacher) =>
+            teacher.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            teacher.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (teacher.specializations && 
+              teacher.specializations.some((spec: string) => 
+                spec.toLowerCase().includes(searchTerm.toLowerCase())
+              ))
+        );
+      } else {
+        return teachers;
+      }
+    };
+    
+    // Aplicar filtragem apenas se os dados ou termo de busca mudarem
+    setFilteredTeachers(filterTeachers());
   }, [teachers, searchTerm]);
   
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoizar callbacks para evitar recriá-los a cada renderização
+  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
-  };
+  }, []);
   
-  const handleAddTeacher = () => {
+  const handleAddTeacher = useCallback(() => {
     navigate('/professores/cadastro');
-  };
+  }, [navigate]);
   
-  const handleEditTeacher = (id: number) => {
+  const handleEditTeacher = useCallback((id: number) => {
     navigate(`/professores/editar/${id}`);
-  };
+  }, [navigate]);
   
-  const handleViewTeacher = (id: number) => {
+  const handleViewTeacher = useCallback((id: number) => {
     navigate(`/professores/${id}`);
-  };
+  }, [navigate]);
   
-  const handleDeleteClick = (id: number) => {
+  const handleDeleteClick = useCallback((id: number) => {
     setTeacherToDelete(id);
     setDeleteDialogOpen(true);
-  };
+  }, []);
   
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (teacherToDelete) {
       await dispatch(deleteTeacher(teacherToDelete));
       setDeleteDialogOpen(false);
       setTeacherToDelete(null);
     }
-  };
+  }, [teacherToDelete, dispatch]);
   
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteDialogOpen(false);
     setTeacherToDelete(null);
-  };
+  }, []);
   
-  const columns: GridColDef[] = [
+  // Memoizar as colunas para evitar recriá-las a cada renderização
+  const columns: GridColDef[] = useMemo(() => [
     { field: 'id', headerName: 'ID', width: 70 },
     { field: 'fullName', headerName: 'Nome Completo', width: 250 },
     { field: 'email', headerName: 'Email', width: 200 },
@@ -108,30 +210,7 @@ const ListaProfessores: React.FC = () => {
       headerName: 'Especializações',
       width: 300,
       renderCell: (params: GridRenderCellParams) => {
-        const renderSpecializations = (teacher: Teacher) => {
-          if (!teacher.specializations || teacher.specializations.length === 0) {
-            return <Chip label="Sem especialização" size="small" color="default" />;
-          }
-
-          return teacher.specializations.map((spec: string) => {
-            // Criar o objeto props sem a key para evitar o warning
-            const chipProps = {
-              label: spec,
-              size: "small" as const,
-              color: "primary" as const,
-              sx: { marginRight: 0.5, marginBottom: 0.5 }
-            };
-            
-            // Passar a key separadamente e espalhar o resto das props
-            return <Chip key={spec} {...chipProps} />;
-          });
-        };
-
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {renderSpecializations(params.row as Teacher)}
-          </Box>
-        );
+        return <SpecializationCell teacher={params.row as Teacher} />;
       },
     },
     {
@@ -139,12 +218,7 @@ const ListaProfessores: React.FC = () => {
       headerName: 'Status',
       width: 120,
       renderCell: (params: GridRenderCellParams) => (
-        <Chip
-          icon={params.value === 'active' ? <ActiveIcon /> : <InactiveIcon />}
-          label={params.value === 'active' ? 'Ativo' : 'Inativo'}
-          color={params.value === 'active' ? 'success' : 'error'}
-          size="small"
-        />
+        <StatusCell value={params.value as string} />
       ),
     },
     {
@@ -153,38 +227,15 @@ const ListaProfessores: React.FC = () => {
       width: 150,
       sortable: false,
       renderCell: (params: GridRenderCellParams) => (
-        <Box>
-          <Tooltip title="Visualizar">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => handleViewTeacher(params.row.id)}
-            >
-              <ViewIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Editar">
-            <IconButton
-              size="small"
-              color="secondary"
-              onClick={() => handleEditTeacher(params.row.id)}
-            >
-              <EditIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Excluir">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => handleDeleteClick(params.row.id)}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <ActionsCell 
+          id={params.row.id} 
+          onView={handleViewTeacher} 
+          onEdit={handleEditTeacher} 
+          onDelete={handleDeleteClick} 
+        />
       ),
     },
-  ];
+  ], [handleViewTeacher, handleEditTeacher, handleDeleteClick]);
   
   return (
     <Box>

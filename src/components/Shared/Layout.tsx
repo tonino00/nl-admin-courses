@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { useNavigate, Outlet } from 'react-router-dom';
 import {
@@ -44,14 +44,20 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state: RootState) => state.auth);
 
+  // Usar useTransition para evitar suspensão durante navegação
+  const [isPending, startTransition] = useTransition();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      // Usar startTransition para evitar suspensão durante navegação
+      startTransition(() => {
+        navigate('/login');
+      });
     }
-  }, [user, navigate]);
+  }, [user, navigate, startTransition]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -68,7 +74,10 @@ const Layout: React.FC = () => {
   const handleLogout = () => {
     handleProfileMenuClose();
     dispatch(logoutUser());
-    navigate('/login');
+    // Usar startTransition para evitar suspensão durante navegação
+    startTransition(() => {
+      navigate('/login');
+    });
   };
 
   const menuItems = [
@@ -105,13 +114,18 @@ const Layout: React.FC = () => {
             button
             key={item.text}
             onClick={() => {
-              navigate(item.path);
+              // Usar startTransition para evitar suspensão durante navegação
+              startTransition(() => {
+                navigate(item.path);
+              });
               if (mobileOpen) setMobileOpen(false);
             }}
             sx={{
               '&.Mui-selected': {
                 backgroundColor: theme.palette.primary.light,
               },
+              // Indicador visual para transição pendente
+              opacity: isPending ? 0.7 : 1,
             }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
