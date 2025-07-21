@@ -209,7 +209,7 @@ const MatricularAlunos: React.FC = () => {
         <Grid item xs={12}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={8}>
+              <Grid item xs={12}>
                 <Typography variant="h6">Informações do Curso</Typography>
                 <Divider sx={{ my: 1 }} />
                 <Typography><strong>Nome:</strong> {currentCourse.name}</Typography>
