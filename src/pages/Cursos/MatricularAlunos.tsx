@@ -124,6 +124,7 @@ const MatricularAlunos: React.FC = () => {
       // Criar matrículas para cada aluno selecionado, usando o nome como identificador principal
       const enrollmentPromises = selectedStudentNames.map((studentName: string) => {
         // Encontrar o objeto do aluno correspondente ao nome
+        // Esse é o ponto-chave da mudança: buscar o aluno pelo nome em vez do ID
         const student = students.find(s => s.fullName === studentName);
         
         if (!student) {
@@ -131,9 +132,11 @@ const MatricularAlunos: React.FC = () => {
         }
         
         const newEnrollment: Omit<EnrollmentFull, 'id'> = {
+          // Nessa implementação, ainda precisamos do ID do estudante para o backend, 
+          // mas o foco agora é encontrar o aluno pelo nome e só depois obter seu ID
           studentId: student.id,
           courseId: courseId,
-          studentName: student.fullName, // Adicionar o nome do aluno explicitamente
+          studentName: student.fullName, // O nome do aluno é agora o identificador principal
           enrollmentDate: moment().format('YYYY-MM-DD'),
           status: 'active',
           attendance: [],
@@ -242,17 +245,32 @@ const MatricularAlunos: React.FC = () => {
                   multiple
                   id="student-select"
                   options={availableStudents}
-                  getOptionLabel={(option: Student) => `${option.fullName} (CPF: ${option.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')})`}
+                  getOptionLabel={(option: Student) => option.fullName}
                   value={selectedStudents}
                   onChange={handleStudentSelection}
                   isOptionEqualToValue={(option, value) => option.fullName === value.fullName}
+                  filterOptions={(options, state) => {
+                    const inputValue = state.inputValue.toLowerCase().trim();
+                    return options.filter(option => 
+                      option.fullName.toLowerCase().includes(inputValue)
+                    );
+                  }}
+                  renderOption={(props, option) => (
+                    <li {...props}>
+                      <Typography variant="body1" fontWeight="bold">{option.fullName}</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        ({option.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')})
+                      </Typography>
+                    </li>
+                  )}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       variant="outlined"
-                      label="Selecionar Alunos"
-                      placeholder="Buscar por nome..."
+                      label="Selecionar Alunos por Nome"
+                      placeholder="Digite o nome do aluno..."
                       fullWidth
+                      helperText="A busca é feita pelo nome do aluno"
                     />
                   )}
                   renderTags={(value, getTagProps) =>
@@ -306,59 +324,40 @@ const MatricularAlunos: React.FC = () => {
             ) : enrollments.filter(e => e.courseId === courseId).length === 0 ? (
               <Alert severity="info">Nenhum aluno matriculado neste curso.</Alert>
             ) : (
-              <TableContainer>
-                <Table size={isMobile ? "small" : "medium"}>
+              <TableContainer sx={{ maxHeight: 400 }}>
+                <Table stickyHeader size={isMobile ? "small" : "medium"}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Nome do Aluno</TableCell>
+                      <TableCell width="50%"><strong>Nome do Aluno</strong></TableCell>
                       <TableCell>Data de Matrícula</TableCell>
                       <TableCell>Status</TableCell>
-                      {!isMobile && <TableCell>CPF</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {enrollments
-                      .filter((enrollment: EnrollmentFull) => enrollment.courseId === courseId)
-                      .map((enrollment: EnrollmentFull) => {
-                        const student = students.find(
-                          (s: Student) => s.id === enrollment.studentId
-                        );
-                        
-                        return (
-                          <TableRow key={enrollment.id}>
-                            <TableCell>
-                              <Typography fontWeight="medium">
-                                {student ? student.fullName : `Aluno não encontrado`}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>{formatDate(enrollment.enrollmentDate)}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={
-                                  enrollment.status === 'active'
-                                    ? 'Ativo'
-                                    : enrollment.status === 'completed'
-                                    ? 'Concluído'
-                                    : 'Cancelado'
-                                }
-                                color={
-                                  enrollment.status === 'active'
-                                    ? 'success'
-                                    : enrollment.status === 'completed'
-                                    ? 'primary'
-                                    : 'error'
-                                }
-                                size="small"
-                              />
-                            </TableCell>
-                            {!isMobile && (
-                              <TableCell>
-                                {student ? student.cpf : "N/A"}
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        );
-                      })}
+                      .filter((e: EnrollmentFull) => e.courseId === courseId)
+                      .sort((a, b) => {
+                        const nameA = a.studentName || '';
+                        const nameB = b.studentName || '';
+                        return nameA.localeCompare(nameB);
+                      })
+                      .map((enrollment: EnrollmentFull) => (
+                        <TableRow key={`${enrollment.studentId}-${enrollment.courseId}`}>
+                          <TableCell>
+                            <Typography variant="body1" fontWeight="medium">
+                              {enrollment.studentName || 'Aluno não encontrado'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{formatDate(enrollment.enrollmentDate)}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={enrollment.status === 'active' ? 'Ativo' : 'Inativo'}
+                              color={enrollment.status === 'active' ? 'success' : 'default'}
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </TableContainer>

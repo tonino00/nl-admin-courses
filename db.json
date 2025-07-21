@@ -337,6 +337,26 @@
         }
       ],
       "averageGrade": 7.5
+    },
+    {
+      "studentId": 1,
+      "courseId": 1,
+      "studentName": "João Silva",
+      "enrollmentDate": "2025-07-19",
+      "status": "active",
+      "attendance": [],
+      "evaluations": [],
+      "id": 5
+    },
+    {
+      "studentId": 1,
+      "courseId": 2,
+      "studentName": "João Silva",
+      "enrollmentDate": "2025-07-19",
+      "status": "active",
+      "attendance": [],
+      "evaluations": [],
+      "id": 6
     }
   ],
   "users": [

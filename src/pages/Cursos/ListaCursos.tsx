@@ -196,7 +196,10 @@ const ListaCursos: React.FC = () => {
           <IconButton
             color="success"
             size="small"
-            onClick={() => handleEnrollment(params.row.id)}
+            // onClick={() => handleEnrollment(params.row.id)}
+            onClick={() =>
+              navigate(`/cursos/${params.row.id}/matricular-alunos`)
+            }
             title="Matricular aluno"
             sx={{ padding: isMobile ? '2px' : 'inherit' }}
           >
