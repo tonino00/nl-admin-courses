@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
         </Typography>
       </Box>
 
-      <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      <Paper sx={{ borderRadius: 2, overflow: 'hidden', padding:6}}>
         <Tabs
           value={selectedTab}
           onChange={handleTabChange}

@@ -103,7 +103,7 @@ const Layout: React.FC = () => {
           <HomeIcon color="primary" />
           <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
             {/* Gestão Acadêmica */}
-            Nosso Lar
+            V 1.0.25
           </Typography>
         </Box>
       </Box>
