@@ -141,32 +141,64 @@ const FormProfessor: React.FC = () => {
     setValue,
     register,
     getValues,
-  } = useForm<TeacherFormData>({
-    defaultValues: initialFormState,
+  } = useForm({
+    defaultValues: initialFormState as any,
     shouldUnregister: false,
     mode: 'onBlur',
   });
+  
+  // Helper function to safely get nested error messages
+  const getNestedErrorMessage = (obj: any, path: string) => {
+    if (!obj) return '';
+    const parts = path.split('.');
+    let current = obj;
+    
+    for (const part of parts) {
+      if (current[part] === undefined) {
+        return '';
+      }
+      current = current[part];
+    }
+    
+    return current?.message || '';
+  };
+  
+  // Helper function to check if a nested field has error
+  const hasNestedError = (obj: any, path: string) => {
+    if (!obj) return false;
+    const parts = path.split('.');
+    let current = obj;
+    
+    for (const part of parts) {
+      if (current[part] === undefined) {
+        return false;
+      }
+      current = current[part];
+    }
+    
+    return !!current;
+  };
 
   // Configurando validações manuais para os campos do formulário
   useEffect(() => {
     // Nome completo
-    register('fullName', {
+    register('fullName' as const, {
       required: 'Nome completo é obrigatório',
     });
 
     // CPF
-    register('cpf', {
+    register('cpf' as const, {
       required: 'CPF é obrigatório',
       validate: (value) => validateCPF(value) || 'CPF inválido',
     });
 
     // Data de nascimento
-    register('birthDate', {
+    register('birthDate' as const, {
       required: 'Data de nascimento é obrigatória',
     });
 
     // Telefone
-    register('phone', {
+    register('phone' as const, {
       required: 'Telefone é obrigatório',
       pattern: {
         value: /^\(\d{2}\)\s\d{1}\s\d{4}-\d{4}$/,
@@ -175,26 +207,26 @@ const FormProfessor: React.FC = () => {
     });
 
     // Email
-    register('email', {
+    register('email' as const, {
       required: 'Email é obrigatório',
       validate: (value) => validateEmail(value) || 'Email inválido',
     });
 
     // Demais campos principais
-    register('status', { required: 'Status é obrigatório' });
-    register('type', { required: 'Tipo do professor é obrigatório' });
-    register('education', { required: 'Formação acadêmica é obrigatória' });
-    register('specializations', {
+    register('status' as const, { required: 'Status é obrigatório' });
+    register('type' as const, { required: 'Tipo do professor é obrigatório' });
+    register('education' as const, { required: 'Formação acadêmica é obrigatória' });
+    register('specializations' as const, {
       required: 'Especializações são obrigatórias',
     });
 
     // Campos do endereço
-    register('address.street', { required: 'Rua é obrigatória' });
-    register('address.number', { required: 'Número é obrigatório' });
-    register('address.district', { required: 'Bairro é obrigatório' });
-    register('address.city', { required: 'Cidade é obrigatória' });
-    register('address.state', { required: 'Estado é obrigatório' });
-    register('address.zipCode', {
+    register('address.street' as const, { required: 'Rua é obrigatória' });
+    register('address.number' as const, { required: 'Número é obrigatório' });
+    register('address.district' as const, { required: 'Bairro é obrigatório' });
+    register('address.city' as const, { required: 'Cidade é obrigatória' });
+    register('address.state' as const, { required: 'Estado é obrigatório' });
+    register('address.zipCode' as const, {
       required: 'CEP é obrigatório',
       pattern: {
         value: /^\d{5}-\d{3}$/,
@@ -357,7 +389,7 @@ const FormProfessor: React.FC = () => {
   };
 
   // Submeter formulário
-  const onSubmit = async (data: TeacherFormData) => {
+  const onSubmit = async (data: any) => {
     try {
       if (isEditMode && currentTeacher) {
         // Update existing teacher
@@ -475,7 +507,7 @@ const FormProfessor: React.FC = () => {
                       variant="outlined"
                       fullWidth
                       error={!!errors.fullName}
-                      helperText={errors.fullName?.message}
+                      helperText={errors.fullName?.message as string}
                       margin="normal"
                     />
                   )}
@@ -528,7 +560,7 @@ const FormProfessor: React.FC = () => {
                       margin="normal"
                       required
                       error={!!errors.birthDate}
-                      helperText={errors.birthDate?.message}
+                      helperText={errors.birthDate?.message as string}
                       InputLabelProps={{
                         shrink: true,
                       }}
@@ -550,7 +582,7 @@ const FormProfessor: React.FC = () => {
                       required
                       margin="normal"
                       error={!!errors.phone}
-                      helperText={errors.phone?.message}
+                      helperText={errors.phone?.message as string}
                       onChange={(e) => {
                         const maskedValue = maskPhone(e.target.value);
                         field.onChange(maskedValue);
@@ -575,7 +607,7 @@ const FormProfessor: React.FC = () => {
                       required
                       margin="normal"
                       error={!!errors.email}
-                      helperText={errors.email?.message}
+                      helperText={errors.email?.message as string}
                       sx={{ mb: 2 }} // Adicionando margem inferior para alinhar com o campo de telefone
                     />
                   )}
@@ -633,8 +665,8 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       required
                       margin="normal"
-                      error={!!errors.address?.street}
-                      helperText={errors.address?.street?.message}
+                      error={hasNestedError(errors, 'address.street')}
+                      helperText={getNestedErrorMessage(errors, 'address.street')}
                       sx={{ mb: 2 }}
                     />
                   )}
@@ -652,8 +684,8 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       required
                       margin="normal"
-                      error={!!errors.address?.number}
-                      helperText={errors.address?.number?.message}
+                      error={hasNestedError(errors, 'address.number')}
+                      helperText={getNestedErrorMessage(errors, 'address.number')}
                       sx={{ mb: 2 }}
                     />
                   )}
@@ -688,8 +720,8 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       required
                       margin="normal"
-                      error={!!errors.address?.district}
-                      helperText={errors.address?.district?.message}
+                      error={hasNestedError(errors, 'address.district')}
+                      helperText={getNestedErrorMessage(errors, 'address.district')}
                       sx={{ mb: 2 }}
                     />
                   )}
@@ -707,8 +739,8 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       required
                       margin="normal"
-                      error={!!errors.address?.city}
-                      helperText={errors.address?.city?.message}
+                      error={hasNestedError(errors, 'address.city')}
+                      helperText={getNestedErrorMessage(errors, 'address.city')}
                       sx={{ mb: 2 }}
                     />
                   )}
@@ -726,8 +758,8 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       required
                       margin="normal"
-                      error={!!errors.address?.state}
-                      helperText={errors.address?.state?.message}
+                      error={hasNestedError(errors, 'address.state')}
+                      helperText={getNestedErrorMessage(errors, 'address.state')}
                       sx={{ mb: 2 }}
                     />
                   )}
@@ -746,8 +778,8 @@ const FormProfessor: React.FC = () => {
                       fullWidth
                       required
                       margin="normal"
-                      error={!!errors.address?.zipCode}
-                      helperText={errors.address?.zipCode?.message}
+                      error={hasNestedError(errors, 'address.zipCode')}
+                      helperText={getNestedErrorMessage(errors, 'address.zipCode')}
                       onChange={(e) => {
                         const maskedValue = maskCEP(e.target.value);
                         field.onChange(maskedValue);
