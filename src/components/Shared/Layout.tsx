@@ -30,6 +30,7 @@ import {
   ExitToApp as LogoutIcon,
   CalendarMonth as CalendarIcon,
   Home as HomeIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material';
 import { RootState } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
@@ -86,6 +87,7 @@ const Layout: React.FC = () => {
     { text: 'Professores', icon: <TeacherIcon />, path: '/professores' },
     { text: 'Cursos', icon: <CourseIcon />, path: '/cursos' },
     { text: 'Calendário', icon: <CalendarIcon />, path: '/calendario' },
+    { text: 'Chat', icon: <ChatIcon />, path: '/chat' },
     { text: 'Relatórios', icon: <ReportIcon />, path: '/relatorios' },
   ];
 

@@ -391,5 +391,151 @@
       "role": "student",
       "studentId": 2
     }
+  ],
+  "chatMessages": [
+    {
+      "id": 1,
+      "conversationId": 1,
+      "senderId": 3,
+      "receiverId": 4,
+      "senderRole": "teacher",
+      "receiverRole": "student",
+      "senderName": "Fernanda Lima",
+      "receiverName": "João Silva",
+      "message": "Olá João, como você está se saindo no curso?",
+      "timestamp": "2025-08-03T14:30:00-03:00",
+      "read": true
+    },
+    {
+      "id": 2,
+      "conversationId": 1,
+      "senderId": 4,
+      "receiverId": 3,
+      "senderRole": "student",
+      "receiverRole": "teacher",
+      "senderName": "João Silva",
+      "receiverName": "Fernanda Lima",
+      "message": "Olá professora, estou gostando bastante do curso. Tenho uma dúvida sobre o último exercício.",
+      "timestamp": "2025-08-03T14:35:00-03:00",
+      "read": true
+    },
+    {
+      "id": 3,
+      "conversationId": 2,
+      "senderId": 3,
+      "receiverId": 5,
+      "senderRole": "teacher",
+      "receiverRole": "student",
+      "senderName": "Fernanda Lima",
+      "receiverName": "Ana Costa",
+      "message": "Ana, lembre-se que temos prova na próxima semana.",
+      "timestamp": "2025-08-03T15:10:00-03:00",
+      "read": false
+    },
+    {
+      "id": 7,
+      "conversationId": 1,
+      "senderId": 3,
+      "receiverId": 4,
+      "senderRole": "teacher",
+      "receiverRole": "student",
+      "senderName": "Fernanda Lima",
+      "receiverName": "João Silva",
+      "message": "Olá João! Fico feliz que esteja gostando. Sobre o exercício, você pode verificar a documentação em https://www.exemplo.com/documentacao. Lá tem vários exemplos que podem te ajudar.",
+      "timestamp": "2025-08-03T14:40:00-03:00",
+      "read": false,
+      "hasLinks": true
+    },
+    {
+      "id": 8,
+      "conversationId": 1,
+      "senderId": 4,
+      "receiverId": 3,
+      "senderRole": "student",
+      "receiverRole": "teacher",
+      "senderName": "João Silva",
+      "receiverName": "Fernanda Lima",
+      "message": "Estou tentando resolver este problema usando a biblioteca que vimos na aula.",
+      "timestamp": "2025-08-03T14:45:00-03:00",
+      "read": false,
+      "attachments": [
+        {
+          "id": "file123",
+          "fileName": "exercicio_resolvido.pdf",
+          "fileType": "application/pdf",
+          "fileSize": 245000,
+          "fileUrl": "/uploads/exercicio_resolvido.pdf"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "conversationId": 1,
+      "senderId": 3,
+      "receiverId": 4,
+      "senderRole": "teacher",
+      "receiverRole": "student",
+      "senderName": "Fernanda Lima",
+      "receiverName": "João Silva",
+      "message": "Dei uma olhada no seu exercício. Está quase perfeito! Apenas falta ajustar a função de cálculo. Veja este exemplo e mais recursos em https://www.exemplo.com/recursos-adicionais",
+      "timestamp": "2025-08-03T15:00:00-03:00",
+      "read": false,
+      "hasLinks": true,
+      "attachments": [
+        {
+          "id": "file456",
+          "fileName": "exemplo_corrigido.jpg",
+          "fileType": "image/jpeg",
+          "fileSize": 125000,
+          "fileUrl": "/uploads/exemplo_corrigido.jpg",
+          "thumbnailUrl": "/uploads/thumbnails/exemplo_corrigido.jpg"
+        },
+        {
+          "id": "file789",
+          "fileName": "solucao.docx",
+          "fileType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "fileSize": 35000,
+          "fileUrl": "/uploads/solucao.docx"
+        }
+      ]
+    }
+  ],
+  "conversations": [
+    {
+      "id": 1,
+      "participants": [
+        {
+          "userId": 3,
+          "role": "teacher",
+          "name": "Fernanda Lima"
+        },
+        {
+          "userId": 4,
+          "role": "student",
+          "name": "João Silva"
+        }
+      ],
+      "lastMessage": "Dei uma olhada no seu exercício. Está quase perfeito! Apenas falta ajustar a função de cálculo. Veja este exemplo e mais recursos em https://www.exemplo.com/recursos-adicionais",
+      "lastMessageTimestamp": "2025-08-03T15:00:00-03:00",
+      "unreadCount": 0
+    },
+    {
+      "id": 2,
+      "participants": [
+        {
+          "userId": 3,
+          "role": "teacher",
+          "name": "Fernanda Lima"
+        },
+        {
+          "userId": 5,
+          "role": "student",
+          "name": "Ana Costa"
+        }
+      ],
+      "lastMessage": "Ana, lembre-se que temos prova na próxima semana.",
+      "lastMessageTimestamp": "2025-08-03T15:10:00-03:00",
+      "unreadCount": 1
+    }
   ]
 }

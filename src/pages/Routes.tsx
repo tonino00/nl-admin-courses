@@ -41,6 +41,9 @@ const MatricularAlunos = lazy(() => import('./Cursos/MatricularAlunos'));
 // Relatórios
 const RelatorioDesempenho = lazy(() => import('./Relatorios/RelatorioDesempenho'));
 
+// Chat
+const ChatPage = lazy(() => import('./chat/ChatPage'));
+
 // Protected Route Component
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -147,6 +150,9 @@ const Routes = () => {
           <Route index element={<LazyComponent><RelatorioDesempenho /></LazyComponent>} />
           <Route path="desempenho" element={<LazyComponent><RelatorioDesempenho /></LazyComponent>} />
         </Route>
+
+        {/* Rota de Chat */}
+        <Route path="chat" element={<LazyComponent><ChatPage /></LazyComponent>} />
 
         {/* Rota padrão - redireciona para dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
