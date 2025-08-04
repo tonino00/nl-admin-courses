@@ -1,5 +1,14 @@
 import axios from 'axios';
-import { API_URL } from '../utils/constants';
+
+// API URL Configuration
+const API_URL = 'http://localhost:3001';
+
+export interface Reaction {
+  emoji: string;
+  userId: number;
+  userName: string;
+  timestamp: string;
+}
 
 export interface ChatMessage {
   id?: number;
@@ -15,6 +24,7 @@ export interface ChatMessage {
   read: boolean;
   attachments?: Attachment[];
   hasLinks?: boolean;
+  reactions?: Reaction[];
 }
 
 export interface Attachment {
@@ -38,6 +48,7 @@ export interface Conversation {
   lastMessage: string;
   lastMessageTimestamp: string;
   unreadCount: number;
+  typingUsers?: { userId: number; name: string }[];
 }
 
 // Regex para detectar links em mensagens
@@ -221,6 +232,9 @@ const mockData: {
     }
   ]
 };
+
+// Status de digitação (simulado para modo offline)
+const typingStatus: Record<number, { userId: number; name: string; conversationId: number; timestamp: number }[]> = {};
 
 // Exportação nomeada para manter compatibilidade com imports existentes
 export const chatService = {
@@ -525,6 +539,128 @@ export const chatService = {
       // Simula um delay de processamento
       setTimeout(() => resolve(attachment), 500);
     });
+  },
+
+  // Gerenciamento de status de digitação
+  typingUsersMap: {} as Record<string, Array<{userId: number; name: string}>>,
+  
+  // Atualiza o status de digitação
+  updateTypingStatus(userId: number, userName: string, conversationId: number, isTyping: boolean): void {
+    const key = `typing_${conversationId}`;
+    let typingUsers = this.typingUsersMap[key] || [];
+    
+    if (isTyping) {
+      // Adiciona usuário se não estiver digitando
+      const existingIndex = typingUsers.findIndex((u: {userId: number}) => u.userId === userId);
+      if (existingIndex === -1) {
+        typingUsers.push({ userId, name: userName });
+      }
+    } else {
+      // Remove o usuário se presente
+      typingUsers = typingUsers.filter((u: {userId: number}) => u.userId !== userId);
+    }
+    
+    this.typingUsersMap[key] = typingUsers;
+  },
+  
+  // Retorna usuários que estão digitando em uma conversa
+  getTypingUsers(conversationId: number): Array<{userId: number; name: string}> {
+    const key = `typing_${conversationId}`;
+    return this.typingUsersMap[key] || [];
+  },
+  
+  // Métodos para reações com emoji
+  async addReaction(messageId: number, emoji: string, userId: number, userName: string): Promise<ChatMessage> {
+    if (OFFLINE_MODE) {
+      // Implementação para modo offline
+      const message = mockData.chatMessages.find(msg => msg.id === messageId);
+      
+      if (!message) {
+        throw new Error('Mensagem não encontrada');
+      }
+      
+      if (!message.reactions) {
+        message.reactions = [];
+      }
+      
+      // Verifica se o usuário já adicionou esta reação
+      const existingReactionIndex = message.reactions.findIndex(
+        (r: Reaction) => r.userId === userId && r.emoji === emoji
+      );
+      
+      // Se já existe, remove (toggle)
+      if (existingReactionIndex !== -1) {
+        message.reactions.splice(existingReactionIndex, 1);
+      } else {
+        // Caso contrário, adicione
+        const newReaction: Reaction = {
+          emoji,
+          userId,
+          userName,
+          timestamp: new Date().toISOString()
+        };
+        message.reactions.push(newReaction);
+      }
+      
+      return {...message};
+    }
+    
+    try {
+      const response = await axios.get(`${API_URL}/chatMessages/${messageId}`);
+      const message = response.data;
+      
+      if (!message) {
+        throw new Error('Mensagem não encontrada');
+      }
+      
+      if (!message.reactions) {
+        message.reactions = [];
+      }
+      
+      // Verifica se o usuário já adicionou esta reação
+      const existingReactionIndex = message.reactions.findIndex(
+        (r: Reaction) => r.userId === userId && r.emoji === emoji
+      );
+      
+      // Se já existe, remove (toggle)
+      if (existingReactionIndex !== -1) {
+        message.reactions.splice(existingReactionIndex, 1);
+      } else {
+        // Caso contrário, adicione
+        const newReaction: Reaction = {
+          emoji,
+          userId,
+          userName,
+          timestamp: new Date().toISOString()
+        };
+        message.reactions.push(newReaction);
+      }
+      
+      const updateResponse = await axios.put(`${API_URL}/chatMessages/${messageId}`, message);
+      return updateResponse.data;
+    } catch (error) {
+      console.error('Erro ao adicionar reação:', error);
+      throw error;
+    }
+  },
+  
+  // Obtém uma mensagem pelo ID
+  async getChatMessageById(messageId: number): Promise<ChatMessage> {
+    if (OFFLINE_MODE) {
+      const message = mockData.chatMessages.find(msg => msg.id === messageId);
+      if (!message) {
+        throw new Error('Mensagem não encontrada');
+      }
+      return {...message};
+    }
+    
+    try {
+      const response = await axios.get(`${API_URL}/chatMessages/${messageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar mensagem:', error);
+      throw error;
+    }
   }
 };
 

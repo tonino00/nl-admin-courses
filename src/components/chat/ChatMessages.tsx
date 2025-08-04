@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Box,
@@ -15,17 +15,27 @@ import {
   Link,
   Card,
   CardMedia,
-  CardContent
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Tooltip,
+  Badge
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import DoneIcon from '@mui/icons-material/Done';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearIcon from '@mui/icons-material/Clear';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DescriptionIcon from '@mui/icons-material/Description';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import { EmojiPicker } from './EmojiPicker';
 import moment from 'moment';
 import 'moment/locale/pt-br';
-import { chatService, ChatMessage, Conversation, Attachment } from '../../services/chatService';
+import { chatService, ChatMessage, Conversation, Attachment, Reaction } from '../../services/chatService';
 import { styled } from '@mui/material/styles';
 
 moment.locale('pt-br');
@@ -55,6 +65,11 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<{userId: number; name: string}[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
+  const [addingReaction, setAddingReaction] = useState<number | null>(null); // Para armazenar o ID da mensagem sendo reagida
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentUser = useSelector((state: any) => state.auth.user);
@@ -83,10 +98,56 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
     loadMessages();
   }, [conversation?.id, currentUser?.id]);
 
-  // Scroll to bottom of messages when they change
+  // Scroll to bottom of messages whenever messages or typing status changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    scrollToBottom();
+  }, [messages, typingUsers]);
+
+  // Função para adicionar ou remover reação
+  const handleAddReaction = async (messageId: number | undefined, emoji: string) => {
+    if (!messageId || !currentUser?.id) return;
+    
+    try {
+      const updatedMessage = await chatService.addReaction(
+        messageId,
+        emoji,
+        currentUser.id,
+        currentUser.name
+      );
+      
+      // Atualizar a mensagem na lista de mensagens
+      setMessages(messages.map(msg => 
+        msg.id === messageId ? updatedMessage : msg
+      ));
+    } catch (error) {
+      console.error('Erro ao adicionar reação:', error);
+    }
+  };
+
+  // Função para verificar se o usuário atual já reagiu com um emoji específico
+  const hasUserReacted = (reactions: Reaction[] | undefined, emoji: string): boolean => {
+    if (!reactions || !currentUser?.id) return false;
+    return reactions.some(r => r.userId === currentUser.id && r.emoji === emoji);
+  };
+
+  // Função para contar quantas reações de um determinado emoji existem
+  const countReactions = (reactions: Reaction[] | undefined, emoji: string): number => {
+    if (!reactions) return 0;
+    return reactions.filter(r => r.emoji === emoji).length;
+  };
+
+  // Função para obter emojis únicos usados em uma mensagem
+  const getUniqueEmojis = (reactions: Reaction[] | undefined): string[] => {
+    if (!reactions || reactions.length === 0) return [];
+    // Usando método de filtro para remover duplicatas em vez de Set para maior compatibilidade
+    return reactions
+      .map(r => r.emoji)
+      .filter((emoji, index, self) => self.indexOf(emoji) === index);
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +196,48 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
     } finally {
       setSending(false);
     }
+  };
+
+  // Check for users who are typing
+  useEffect(() => {
+    if (!conversation?.id) return;
+    
+    // Set up interval to check for typing users
+    const checkTypingInterval = setInterval(() => {
+      if (conversation?.id) {
+        const activeTypers = chatService.getTypingUsers(conversation.id)
+          .filter(user => user.userId !== currentUser?.id); // Não mostrar o usuário atual
+        
+        setTypingUsers(activeTypers);
+      }
+    }, 1000); // Verificar a cada 1 segundo
+    
+    return () => {
+      clearInterval(checkTypingInterval);
+    };
+  }, [conversation?.id, currentUser?.id]);
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Atualizar status de digitação
+    if (!isTyping && conversation?.id && currentUser?.id) {
+      setIsTyping(true);
+      chatService.updateTypingStatus(currentUser.id, currentUser.name, conversation.id, true);
+    }
+    
+    // Reset typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new typing timeout
+    typingTimeoutRef.current = setTimeout(() => {
+      if (conversation?.id && currentUser?.id) {
+        setIsTyping(false);
+        chatService.updateTypingStatus(currentUser.id, currentUser.name, conversation.id, false);
+      }
+    }, 2000); // Considerar que parou de digitar após 2 segundos sem atividade
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,12 +304,20 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
   ) || conversation.participants[0];
 
   return (
-    <Paper 
+    <Box 
       sx={{ 
+        height: '100%', 
         display: 'flex', 
-        flexDirection: 'column', 
-        height: '100%',
-        maxHeight: 'calc(100vh - 200px)'
+        flexDirection: 'column',
+        '& .reaction-button': {
+          opacity: 0
+        },
+        '& .MuiPaper-root:hover .reaction-button': {
+          opacity: 0.7,
+          '&:hover': {
+            opacity: 1
+          }
+        }
       }}
     >
       {/* Chat header */}
@@ -234,7 +345,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
         sx={{
           p: 2,
           flexGrow: 1,
-          overflow: 'auto',
+          overflowY: 'auto',
           bgcolor: 'background.default'
         }}
       >
@@ -251,15 +362,15 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
                 </Typography>
               </Box>
             ) : (
-              messages.map((msg, index) => {
-                const isCurrentUser = msg.senderId === currentUser?.id;
+              messages.map((message, index) => {
+                const isCurrentUser = message.senderId === currentUser?.id;
                 const showDateDivider = renderDateDivider(
-                  msg.timestamp,
+                  message.timestamp,
                   index > 0 ? messages[index - 1].timestamp : null
                 );
 
                 return (
-                  <React.Fragment key={msg.id}>
+                  <React.Fragment key={message.id}>
                     {showDateDivider && (
                       <Box
                         sx={{
@@ -278,7 +389,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
                             color: 'text.secondary'
                           }}
                         >
-                          {moment(msg.timestamp).format('DD [de] MMMM, YYYY')}
+                          {moment(message.timestamp).format('DD [de] MMMM, YYYY')}
                         </Typography>
                       </Box>
                     )}
@@ -302,11 +413,11 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
                         }}
                       >
                         {/* Render the message with clickable links */}
-                        {msg.message && (
+                        {message.message && (
                           <Typography variant="body1">
-                            {msg.hasLinks ? (
+                            {message.hasLinks ? (
                               <>
-                                {msg.message.split(' ').map((word, i) => {
+                                {message.message.split(' ').map((word, i) => {
                                   if (word.match(URL_REGEX)) {
                                     return (
                                       <React.Fragment key={i}>
@@ -329,15 +440,15 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
                                 })}
                               </>
                             ) : (
-                              msg.message
+                              message.message
                             )}
                           </Typography>
                         )}
                         
                         {/* Render attachments */}
-                        {msg.attachments && msg.attachments.length > 0 && (
+                        {message.attachments && message.attachments.length > 0 && (
                           <Box sx={{ mt: 1 }}>
-                            {msg.attachments.map((attachment) => {
+                            {message.attachments.map((attachment) => {
                               const isImage = attachment.fileType.startsWith('image/');
                               
                               if (isImage) {
@@ -374,18 +485,67 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
                                 }
                                 
                                 return (
-                                  <Box key={attachment.id} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                    <FileIcon sx={{ mr: 1, color: isCurrentUser ? 'primary.contrastText' : 'primary.main' }} />
-                                    <Link 
-                                      href={attachment.fileUrl} 
-                                      target="_blank"
-                                      sx={{ 
-                                        fontSize: '0.875rem',
-                                        color: isCurrentUser ? 'primary.contrastText' : 'primary.main',
-                                      }}
-                                    >
-                                      {attachment.fileName} ({(attachment.fileSize / 1024).toFixed(1)} KB)
-                                    </Link>
+                                  <Box 
+                                    key={attachment.id} 
+                                    sx={{ 
+                                      mt: 1,
+                                      cursor: 'pointer',
+                                    }}
+                                    onClick={() => setPreviewAttachment(attachment)}
+                                  >
+                                    {attachment.fileType.startsWith('image/') && attachment.thumbnailUrl ? (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Card elevation={0}>
+                                          <CardMedia
+                                            component="img"
+                                            height="120"
+                                            image={attachment.thumbnailUrl}
+                                            alt={attachment.fileName}
+                                            sx={{ 
+                                              borderRadius: 1,
+                                              maxWidth: 200,
+                                              objectFit: 'cover',
+                                              cursor: 'pointer',
+                                              border: '1px solid rgba(0, 0, 0, 0.1)',
+                                              '&:hover': { opacity: 0.9 }
+                                            }}
+                                          />
+                                        </Card>
+                                      </Box>
+                                    ) : (
+                                      <Box 
+                                        sx={{ 
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 1,
+                                          p: 1,
+                                          border: '1px solid rgba(0, 0, 0, 0.1)',
+                                          borderRadius: 1,
+                                          bgcolor: 'rgba(0, 0, 0, 0.03)',
+                                          '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.05)' },
+                                          maxWidth: 'fit-content'
+                                        }}
+                                      >
+                                        {attachment.fileType.includes('pdf') ? (
+                                          <PictureAsPdfIcon color="error" />
+                                        ) : attachment.fileType.includes('word') ? (
+                                          <DescriptionIcon color="primary" />
+                                        ) : attachment.fileType.includes('sheet') || attachment.fileType.includes('excel') ? (
+                                          <TableChartIcon color="success" />
+                                        ) : (
+                                          <InsertDriveFileIcon />
+                                        )}
+                                        <Typography 
+                                          variant="body2" 
+                                          sx={{ 
+                                            color: isCurrentUser ? 'primary.contrastText' : 'primary.main',
+                                            fontWeight: 500
+                                          }}
+                                        >
+                                          {attachment.fileName} ({(attachment.fileSize / 1024).toFixed(1)} KB)
+                                        </Typography>
+                                      </Box>
+                                    )}
                                   </Box>
                                 );
                               }
@@ -393,22 +553,167 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
                           </Box>
                         )}
                         
-                        <Typography
-                          variant="caption"
+                        <Box
                           sx={{
-                            display: 'block',
-                            textAlign: 'right',
-                            mt: 0.5,
-                            opacity: 0.8
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: 0.5,
+                            mt: 0.5
                           }}
                         >
-                          {moment(msg.timestamp).format('HH:mm')}
-                        </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: isCurrentUser ? 'primary.contrastText' : 'text.secondary', opacity: 0.8 }}
+                          >
+                            {moment(message.timestamp).format('HH:mm')}
+                          </Typography>
+                          
+                          {/* Indicador de lido/entregue (apenas para mensagens enviadas pelo usuário atual) */}
+                          {isCurrentUser && (
+                            message.read ? (
+                              <DoneAllIcon sx={{ fontSize: '0.8rem', color: 'primary.contrastText', opacity: 0.9 }} />
+                            ) : (
+                              <DoneIcon sx={{ fontSize: '0.8rem', color: 'primary.contrastText', opacity: 0.7 }} />
+                            )
+                          )}
+                          
+                          {/* Botão para adicionar reação */}
+                          <Box 
+                            sx={{ 
+                              ml: 0.5,
+                              opacity: 0, 
+                              transition: 'opacity 0.2s',
+                              '&:hover': { opacity: 1 }
+                            }}
+                            className="reaction-button"
+                          >
+                            <EmojiPicker onEmojiSelect={(emoji) => handleAddReaction(message.id, emoji)} />
+                          </Box>
+                        </Box>
+                        
+                        {/* Exibição de reações */}
+                        {message.reactions && message.reactions.length > 0 && (
+                          <Box 
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 0.5,
+                              mt: 1
+                            }}
+                          >
+                            {getUniqueEmojis(message.reactions).map(emoji => {
+                              const count = countReactions(message.reactions, emoji);
+                              const hasReacted = hasUserReacted(message.reactions, emoji);
+                              
+                              return (
+                                <Tooltip 
+                                  key={emoji} 
+                                  title={
+                                    <>
+                                      {message.reactions
+                                        ?.filter(r => r.emoji === emoji)
+                                        .map(r => r.userName)
+                                        .join(', ')}
+                                    </>
+                                  }
+                                >
+                                  <Chip
+                                    label={
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <span style={{ fontSize: '16px' }}>{emoji}</span>
+                                        {count > 1 && <span style={{ fontSize: '12px' }}>{count}</span>}
+                                      </Box>
+                                    }
+                                    size="small"
+                                    onClick={() => handleAddReaction(message.id, emoji)}
+                                    sx={{
+                                      height: 24,
+                                      backgroundColor: hasReacted ? 'primary.light' : 'action.hover',
+                                      color: hasReacted ? 'primary.contrastText' : 'text.primary',
+                                      '&:hover': { backgroundColor: hasReacted ? 'primary.main' : 'action.selected' }
+                                    }}
+                                  />
+                                </Tooltip>
+                              );
+                            })}
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                   </React.Fragment>
                 );
               })
+            )}
+            {/* Indicador de digitação */}
+            {typingUsers.length > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  p: 1,
+                  ml: 2,
+                  mt: 1,
+                  maxWidth: '75%',
+                  borderRadius: 2,
+                  bgcolor: 'background.paper',
+                  boxShadow: 1
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 24,
+                    width: 40,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: '#6b6b6b',
+                      marginRight: 4,
+                      animation: 'typing 1s infinite',
+                      animationDelay: '0s'
+                    }}
+                  />
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: '#6b6b6b',
+                      marginRight: 4,
+                      animation: 'typing 1s infinite',
+                      animationDelay: '0.2s'
+                    }}
+                  />
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: '#6b6b6b',
+                      animation: 'typing 1s infinite',
+                      animationDelay: '0.4s'
+                    }}
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary">
+                  {typingUsers.length === 1 
+                    ? `${typingUsers[0].name} está digitando...`
+                    : `${typingUsers.length} pessoas estão digitando...`
+                  }
+                </Typography>
+              </Box>
             )}
             <div ref={messagesEndRef} />
           </>
@@ -490,7 +795,73 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ conversation }) => {
           }}
         />
       </Box>
-    </Paper>
+
+      {/* Dialog de Preview de Anexo */}
+      <Dialog 
+        open={!!previewAttachment} 
+        onClose={() => setPreviewAttachment(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        {previewAttachment && (
+          <>
+            <DialogTitle>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6">{previewAttachment.fileName}</Typography>
+                <IconButton onClick={() => setPreviewAttachment(null)} size="small">
+                  <ClearIcon />
+                </IconButton>
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              {previewAttachment.fileType.startsWith('image/') ? (
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    py: 2 
+                  }}
+                >
+                  <img 
+                    src={previewAttachment.fileUrl} 
+                    alt={previewAttachment.fileName}
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '70vh',
+                      objectFit: 'contain'
+                    }} 
+                  />
+                </Box>
+              ) : previewAttachment.fileType.includes('pdf') ? (
+                <Box sx={{ height: '70vh', width: '100%' }}>
+                  <iframe 
+                    src={`${previewAttachment.fileUrl}#view=fitH`} 
+                    width="100%" 
+                    height="100%"
+                    title={previewAttachment.fileName}
+                    style={{ border: 'none' }}
+                  />
+                </Box>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body1" gutterBottom>Visualização não disponível para este tipo de arquivo.</Typography>
+                  <Button 
+                    variant="contained" 
+                    href={previewAttachment.fileUrl} 
+                    target="_blank"
+                    startIcon={<CloudDownloadIcon />}
+                    sx={{ mt: 2 }}
+                  >
+                    Baixar Arquivo
+                  </Button>
+                </Box>
+              )}
+            </DialogContent>
+          </>
+        )}
+      </Dialog>
+    </Box>
   );
 };
 
