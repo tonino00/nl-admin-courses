@@ -15,7 +15,7 @@ export const fetchStudents = createAsyncThunk(
   'students/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/students');
+      const response = await api.get('/api/alunos');
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -30,7 +30,7 @@ export const fetchStudentById = createAsyncThunk(
   'students/fetchById',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/students/${id}`);
+      const response = await api.get(`/api/alunos/${id}`);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -45,7 +45,7 @@ export const createStudent = createAsyncThunk(
   'students/create',
   async (student: Omit<Student, 'id'>, { rejectWithValue }) => {
     try {
-      const response = await api.post('/students', student);
+      const response = await api.post('/api/alunos', student);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -60,7 +60,7 @@ export const updateStudent = createAsyncThunk(
   'students/update',
   async (student: Student, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/students/${student.id}`, student);
+      const response = await api.put(`/api/alunos/${student.id}`, student);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -75,7 +75,7 @@ export const deleteStudent = createAsyncThunk(
   'students/delete',
   async (id: number, { rejectWithValue }) => {
     try {
-      await api.delete(`/students/${id}`);
+      await api.delete(`/api/alunos/${id}`);
       return id;
     } catch (error) {
       if (error instanceof Error) {

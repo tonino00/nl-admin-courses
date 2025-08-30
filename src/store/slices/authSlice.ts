@@ -35,7 +35,8 @@ export const checkAuthStatus = createAsyncThunk('auth/checkStatus', async (_, { 
   try {
     const isAuth = authService.isAuthenticated();
     if (isAuth) {
-      const user = authService.getCurrentUser();
+      // Obter o usuário usando o endpoint /api/auth/me
+      const user = await authService.getCurrentUser();
       const token = localStorage.getItem('token');
       
       if (!user || !token) {

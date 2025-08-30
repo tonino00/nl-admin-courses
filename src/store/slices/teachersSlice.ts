@@ -15,7 +15,7 @@ export const fetchTeachers = createAsyncThunk(
   'teachers/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/teachers');
+      const response = await api.get('/api/professores');
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -30,7 +30,7 @@ export const fetchTeacherById = createAsyncThunk(
   'teachers/fetchById',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/teachers/${id}`);
+      const response = await api.get(`/api/professores/${id}`);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -45,7 +45,7 @@ export const createTeacher = createAsyncThunk(
   'teachers/create',
   async (teacher: Omit<Teacher, 'id'>, { rejectWithValue }) => {
     try {
-      const response = await api.post('/teachers', teacher);
+      const response = await api.post('/api/professores', teacher);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -60,7 +60,7 @@ export const updateTeacher = createAsyncThunk(
   'teachers/update',
   async (teacher: Teacher, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/teachers/${teacher.id}`, teacher);
+      const response = await api.put(`/api/professores/${teacher.id}`, teacher);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -75,7 +75,7 @@ export const deleteTeacher = createAsyncThunk(
   'teachers/delete',
   async (id: number, { rejectWithValue }) => {
     try {
-      await api.delete(`/teachers/${id}`);
+      await api.delete(`/api/professores/${id}`);
       return id;
     } catch (error) {
       if (error instanceof Error) {

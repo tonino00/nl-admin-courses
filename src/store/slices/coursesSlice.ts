@@ -28,7 +28,7 @@ export const fetchCourses = createAsyncThunk(
   'courses/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/courses');
+      const response = await api.get('/api/cursos');
       // Normaliza cada curso antes de retornar
       const normalizedCourses = response.data.map((course: any) => normalizeCourse(course));
       return normalizedCourses;
@@ -45,7 +45,7 @@ export const fetchCourseById = createAsyncThunk(
   'courses/fetchById',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/courses/${id}`);
+      const response = await api.get(`/api/cursos/${id}`);
       // Normaliza o curso antes de retornar
       const normalizedCourse = normalizeCourse(response.data);
       return normalizedCourse;
@@ -62,7 +62,7 @@ export const createCourse = createAsyncThunk(
   'courses/create',
   async (course: Omit<Course, 'id'>, { rejectWithValue }) => {
     try {
-      const response = await api.post('/courses', course);
+      const response = await api.post('/api/cursos', course);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -78,7 +78,7 @@ export const updateCourse = createAsyncThunk(
   async (params: { id: number, courseData: Course }, { rejectWithValue }) => {
     try {
       const { id, courseData } = params;
-      const response = await api.put(`/courses/${id}`, courseData);
+      const response = await api.put(`/api/cursos/${id}`, courseData);
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
@@ -93,7 +93,7 @@ export const deleteCourse = createAsyncThunk(
   'courses/delete',
   async (id: number, { rejectWithValue }) => {
     try {
-      await api.delete(`/courses/${id}`);
+      await api.delete(`/api/cursos/${id}`);
       return id;
     } catch (error) {
       if (error instanceof Error) {

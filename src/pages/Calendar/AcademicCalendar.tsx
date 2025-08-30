@@ -165,7 +165,7 @@ const AcademicCalendar: React.FC = () => {
       if (user.role === 'teacher') userType = 'teacher';
       else if (user.role === 'student') userType = 'student';
     }
-    dispatch(fetchCalendarEvents(userType));
+    dispatch(fetchCalendarEvents({ userType }));
   }, [dispatch, user]);
 
   // Função para filtrar eventos com base nos filtros ativos

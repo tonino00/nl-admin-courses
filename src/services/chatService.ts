@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API URL Configuration
-const API_URL = 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || 'https://nl-admin-courses-api-v3.onrender.com';
 
 export interface Reaction {
   emoji: string;
@@ -59,8 +59,8 @@ const detectLinks = (message: string): boolean => {
   return URL_REGEX.test(message);
 };
 
-// Ativa o modo offline para testes sem backend
-const OFFLINE_MODE = true;
+// Desativa o modo offline para usar a API real
+const OFFLINE_MODE = false;
 
 // Dados mockados para modo offline
 const mockData: {

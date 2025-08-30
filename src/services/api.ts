@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with baseURL
 const api = axios.create({
-  baseURL: 'http://localhost:3002',
+  baseURL: process.env.REACT_APP_API_URL || 'https://nl-admin-courses-api-v3.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,82 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { CalendarEvent, CalendarState, CalendarEventType } from '../../types/calendar';
 import { RootState } from '..';
+import api from '../../services/api';
 
-// Dados iniciais mockados para eventos do calendário
-const mockEvents: CalendarEvent[] = [
-  {
-    id: 1,
-    title: 'Aula de Matemática',
-    start: new Date(new Date().setHours(10, 0, 0)),
-    end: new Date(new Date().setHours(12, 0, 0)),
-    type: 'class',
-    description: 'Introdução à Álgebra Linear',
-    location: 'Sala 101',
-    courseId: 1,
-    teacherId: 1,
-    studentIds: [1, 2, 3, 4, 5],
-    color: '#4caf50',
-    createdBy: 1,
-    createdAt: new Date(),
-  },
-  {
-    id: 2,
-    title: 'Prova de História',
-    start: new Date(new Date().setDate(new Date().getDate() + 2)),
-    end: new Date(new Date().setDate(new Date().getDate() + 2)),
-    allDay: true,
-    type: 'exam',
-    description: 'Prova sobre Revolução Industrial',
-    location: 'Sala 203',
-    courseId: 2,
-    teacherId: 2,
-    studentIds: [1, 2, 3],
-    color: '#f44336',
-    createdBy: 2,
-    createdAt: new Date(),
-  },
-  {
-    id: 3,
-    title: 'Entrega de Trabalho',
-    start: new Date(new Date().setDate(new Date().getDate() + 5)),
-    end: new Date(new Date().setDate(new Date().getDate() + 5)),
-    allDay: true,
-    type: 'assignment',
-    description: 'Trabalho final de Literatura',
-    courseId: 3,
-    teacherId: 3,
-    studentIds: [4, 5, 6],
-    color: '#ff9800',
-    createdBy: 3,
-    createdAt: new Date(),
-  },
-  {
-    id: 4,
-    title: 'Reunião de Professores',
-    start: new Date(new Date().setDate(new Date().getDate() - 1)),
-    end: new Date(new Date().setDate(new Date().getDate() - 1)),
-    allDay: false,
-    type: 'meeting',
-    description: 'Discussão sobre metodologias de ensino',
-    location: 'Sala dos Professores',
-    teacherId: 1,
-    color: '#2196f3',
-    createdBy: 1,
-    createdAt: new Date(),
-  },
-  {
-    id: 5,
-    title: 'Feriado - Dia do Professor',
-    start: new Date(new Date().setDate(new Date().getDate() + 10)),
-    end: new Date(new Date().setDate(new Date().getDate() + 10)),
-    allDay: true,
-    type: 'holiday',
-    description: 'Feriado em celebração ao Dia do Professor',
-    color: '#9c27b0',
-    createdBy: 1,
-    createdAt: new Date(),
-  }
-];
+// Type for filtering calendar events
+export type CalendarFilterOptions = {
+  userType?: string;
+  startDate?: Date;
+  endDate?: Date;
+};
 
 // Estado inicial
 const initialState: CalendarState = {
@@ -92,64 +24,66 @@ const initialState: CalendarState = {
 // Thunk para buscar eventos do calendário
 export const fetchCalendarEvents = createAsyncThunk(
   'calendar/fetchEvents',
-  async (userType?: string) => {
-    // Simular um delay de carregamento
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Filtrar eventos baseados no tipo de usuário (em uma aplicação real, isso viria da API)
-    if (userType === 'student') {
-      return mockEvents.filter(event => 
-        event.type === 'class' || event.type === 'exam' || event.type === 'assignment'
-      );
-    } else if (userType === 'teacher') {
-      return mockEvents.filter(event => 
-        event.teacherId === 1 || event.type === 'meeting' || event.type === 'holiday'
-      );
+  async (filters: CalendarFilterOptions = {}, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/calendario', {
+        params: filters
+      });
+      return response.data;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Erro ao carregar eventos do calendário');
     }
-    
-    return mockEvents;
   }
 );
 
 // Thunk para adicionar um novo evento
 export const addCalendarEvent = createAsyncThunk(
   'calendar/addEvent',
-  async (event: Omit<CalendarEvent, 'id' | 'createdAt'>) => {
-    // Simular um delay de carregamento
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Em uma aplicação real, enviaria para API e receberia ID de volta
-    const newEvent: CalendarEvent = {
-      ...event,
-      id: Date.now(),
-      createdAt: new Date()
-    };
-    
-    return newEvent;
+  async (event: Omit<CalendarEvent, 'id' | 'createdAt'>, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/api/calendario', event);
+      return response.data;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Erro ao adicionar evento ao calendário');
+    }
   }
 );
 
 // Thunk para atualizar um evento existente
 export const updateCalendarEvent = createAsyncThunk(
   'calendar/updateEvent',
-  async (event: CalendarEvent) => {
-    // Simular um delay de carregamento
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Em uma aplicação real, enviaria para API
-    return event;
+  async (event: CalendarEvent, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/api/calendario/${event.id}`, event);
+      return response.data;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Erro ao atualizar evento do calendário');
+    }
   }
 );
 
-// Thunk para remover um evento
+// Thunk para remover um evento do calendário
 export const removeCalendarEvent = createAsyncThunk(
   'calendar/removeEvent',
-  async (eventId: string | number) => {
-    // Simular um delay de carregamento
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Em uma aplicação real, enviaria para API
-    return eventId;
+  async (id: string | number, { rejectWithValue }) => {
+    try {
+      await api.delete(`/api/calendario/${id}`);
+      return id;
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Erro ao remover evento do calendário');
+    }
   }
 );
 
