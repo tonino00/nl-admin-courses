@@ -15,6 +15,9 @@ import LazyComponent from '../components/LazyComponent';
 // Implementando lazy loading para todas as páginas
 // Pages
 const Login = lazy(() => import('./Login/Login'));
+const Register = lazy(() => import('./Register/Register'));
+const RequestReset = lazy(() => import('./PasswordReset/RequestReset'));
+const ConfirmReset = lazy(() => import('./PasswordReset/ConfirmReset'));
 const Dashboard = lazy(() => import('./Dashboard/Dashboard'));
 const AcademicCalendar = lazy(() => import('./Calendar/AcademicCalendar'));
 
@@ -94,8 +97,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 const Routes = () => {
   return (
     <RouterRoutes>
-      {/* Rota pública para login */}
+      {/* Rotas públicas de autenticação */}
       <Route path="/login" element={<LazyComponent><Login /></LazyComponent>} />
+      <Route path="/register" element={<LazyComponent><Register /></LazyComponent>} />
+      <Route path="/reset-password" element={<LazyComponent><RequestReset /></LazyComponent>} />
+      <Route path="/reset-password/:token" element={<LazyComponent><ConfirmReset /></LazyComponent>} />
 
       {/* Rotas protegidas - necessitam autenticação */}
       <Route

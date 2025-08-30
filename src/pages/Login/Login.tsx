@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -137,6 +137,20 @@ const Login: React.FC = () => {
             >
               {loading ? <CircularProgress size={24} /> : 'Entrar'}
             </Button>
+            
+            <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Typography variant="body2" color="primary">
+                  Criar nova conta
+                </Typography>
+              </Link>
+              
+              <Link to="/reset-password" style={{ textDecoration: 'none' }}>
+                <Typography variant="body2" color="primary">
+                  Esqueci minha senha
+                </Typography>
+              </Link>
+            </Box>
           </Box>
         </Paper>
       </Box>
