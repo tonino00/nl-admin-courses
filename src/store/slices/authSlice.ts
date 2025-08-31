@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, LoginCredentials, User } from '../../types';
 import * as authService from '../../services/auth';
+import { RegisterCredentials, PasswordResetRequest, PasswordResetConfirm } from '../../services/auth';
 
 // Initial state
 const initialState: AuthState = {
@@ -54,6 +55,54 @@ export const checkAuthStatus = createAsyncThunk('auth/checkStatus', async (_, { 
     return rejectWithValue('Erro ao verificar autenticação');
   }
 });
+
+// Thunk para registro de usuário
+export const registerUser = createAsyncThunk(
+  'auth/register',
+  async (credentials: RegisterCredentials, { rejectWithValue }) => {
+    try {
+      const { user, token } = await authService.register(credentials);
+      return { user, token };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Falha no registro');
+    }
+  }
+);
+
+// Thunk para solicitar recuperação de senha
+export const requestPasswordReset = createAsyncThunk(
+  'auth/requestReset',
+  async (request: PasswordResetRequest, { rejectWithValue }) => {
+    try {
+      await authService.requestPasswordReset(request);
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Falha ao solicitar recuperação de senha');
+    }
+  }
+);
+
+// Thunk para confirmar nova senha
+export const confirmPasswordReset = createAsyncThunk(
+  'auth/confirmReset',
+  async (data: PasswordResetConfirm, { rejectWithValue }) => {
+    try {
+      await authService.confirmPasswordReset(data);
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Falha ao confirmar nova senha');
+    }
+  }
+);
 
 // Auth slice
 const authSlice = createSlice({
@@ -115,6 +164,45 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         state.error = action.payload as string || 'Falha na autenticação';
+      })
+      // Register
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Request password reset
+      .addCase(requestPasswordReset.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(requestPasswordReset.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(requestPasswordReset.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Confirm password reset
+      .addCase(confirmPasswordReset.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(confirmPasswordReset.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(confirmPasswordReset.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

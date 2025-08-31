@@ -8,13 +8,30 @@ const api = axios.create({
   },
 });
 
+// Lista de rotas públicas que não precisam de autenticação
+const publicRoutes = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/reset-password/request',
+  '/api/auth/reset-password/confirm'
+];
+
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Verifica se a URL atual é uma rota pública
+    const isPublicRoute = publicRoutes.some(route => 
+      config.url?.endsWith(route) || config.url?.includes(route)
+    );
+    
+    // Só adiciona o token para rotas que não são públicas
+    if (!isPublicRoute) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+    
     return config;
   },
   (error) => Promise.reject(error)

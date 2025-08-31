@@ -29,8 +29,7 @@ const Register: React.FC = () => {
   const [formData, setFormData] = useState<RegisterCredentials>({
     username: '',
     password: '',
-    email: '',
-    fullName: '',
+    name: '',
     role: 'student', // Valor padrão
   });
   
@@ -51,10 +50,7 @@ const Register: React.FC = () => {
     if (!confirmPassword) errors.confirmPassword = 'Confirme sua senha';
     if (formData.password !== confirmPassword) errors.confirmPassword = 'As senhas não coincidem';
     
-    if (!formData.email) errors.email = 'Email é obrigatório';
-    if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email inválido';
-    
-    if (!formData.fullName) errors.fullName = 'Nome completo é obrigatório';
+    if (!formData.name) errors.name = 'Nome é obrigatório';
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -165,31 +161,15 @@ const Register: React.FC = () => {
               margin="normal"
               required
               fullWidth
-              id="email"
-              label="Email"
-              name="email"
-              autoComplete="email"
-              type="email"
-              value={formData.email}
-              onChange={handleTextFieldChange}
-              disabled={loading}
-              error={!!formErrors.email}
-              helperText={formErrors.email}
-            />
-            
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="fullName"
-              label="Nome completo"
-              name="fullName"
+              id="name"
+              label="Nome"
+              name="name"
               autoComplete="name"
-              value={formData.fullName}
+              value={formData.name}
               onChange={handleTextFieldChange}
               disabled={loading}
-              error={!!formErrors.fullName}
-              helperText={formErrors.fullName}
+              error={!!formErrors.name}
+              helperText={formErrors.name}
             />
             
             <FormControl fullWidth margin="normal">
