@@ -113,7 +113,7 @@ const Login: React.FC = () => {
               disabled={loading}
             />
             
-            <Box sx={{ mt: 3, mb: 2 }}>
+            {/* <Box sx={{ mt: 3, mb: 2 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 Credenciais para teste:
               </Typography>
@@ -126,7 +126,7 @@ const Login: React.FC = () => {
               <Typography variant="body2" color="text.secondary">
                 - Aluno: username: student1 / senha: student123
               </Typography>
-            </Box>
+            </Box> */}
             
             <Button
               type="submit"
