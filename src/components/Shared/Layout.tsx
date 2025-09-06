@@ -195,7 +195,7 @@ const Layout: React.FC = () => {
                       height: 32,
                     }}
                   >
-                    {user.name.charAt(0)}
+                    {user?.name ? user.name.charAt(0) : '?'}
                   </Avatar>
                 </IconButton>
               </Tooltip>
