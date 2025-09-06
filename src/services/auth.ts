@@ -8,6 +8,7 @@ export interface RegisterCredentials {
   username: string;
   password: string;
   name: string;
+  email: string;
   role?: 'admin' | 'teacher' | 'student';
 }
 

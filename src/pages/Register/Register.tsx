@@ -30,6 +30,7 @@ const Register: React.FC = () => {
     username: '',
     password: '',
     name: '',
+    email: '',
     role: 'student', // Valor padrão
   });
   
@@ -51,6 +52,10 @@ const Register: React.FC = () => {
     if (formData.password !== confirmPassword) errors.confirmPassword = 'As senhas não coincidem';
     
     if (!formData.name) errors.name = 'Nome é obrigatório';
+    
+    if (!formData.email) errors.email = 'Email é obrigatório';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) errors.email = 'Email inválido';
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -171,6 +176,22 @@ const Register: React.FC = () => {
               error={!!formErrors.name}
               helperText={formErrors.name}
             />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={formData.email}
+              onChange={handleTextFieldChange}
+              disabled={loading}
+              error={!!formErrors.email}
+              helperText={formErrors.email}
+            />
             
             <FormControl fullWidth margin="normal">
               <InputLabel id="role-label">Tipo de conta</InputLabel>
@@ -185,6 +206,7 @@ const Register: React.FC = () => {
               >
                 <MenuItem value="student">Aluno</MenuItem>
                 <MenuItem value="teacher">Professor</MenuItem>
+                <MenuItem value="admin">Administrador</MenuItem>
               </Select>
               <FormHelperText>
                 Selecione o tipo de conta que deseja criar
