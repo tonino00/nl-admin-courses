@@ -84,12 +84,18 @@ const DetalhesProfessor: React.FC = () => {
   
   const [tabValue, setTabValue] = useState(0);
   
+  // Flag para controlar se já buscamos os dados
+  const [dataFetched, setDataFetched] = useState(false);
+  
   useEffect(() => {
-    if (id) {
-      dispatch(fetchTeacherById(Number(id)));
+    // Buscar dados apenas uma vez e usar o ID diretamente como string
+    if (id && !dataFetched) {
+      console.log('Fetching teacher details with ID:', id, 'Type:', typeof id);
+      dispatch(fetchTeacherById(id)); // Usar o ID diretamente sem conversão para number
       dispatch(fetchCourses());
+      setDataFetched(true); // Marcar que já buscamos os dados
     }
-  }, [dispatch, id]);
+  }, [dispatch, id, dataFetched]);
   
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -133,17 +139,47 @@ const DetalhesProfessor: React.FC = () => {
     );
   }
   
+  // Função auxiliar para comparar IDs que podem ser string ou number
+  const compareIds = (id1: any, id2: any): boolean => {
+    // Se ambos são iguais, retorna true (mesmo tipo e valor)
+    if (id1 === id2) return true;
+    
+    // Caso contrário, converte ambos para string e compara
+    return String(id1) === String(id2);
+  };
+  
   // Encontrar cursos ministrados pelo professor
   // Verificamos tanto se o ID do professor está no curso quanto se o curso está listado no professor
   const teacherCourses = courses.filter((course: Course) => {
+    // Verificar se o professor tem id
+    if (!currentTeacher.id) {
+      console.warn('Teacher ID is undefined or null');
+      return false;
+    }
+    
+    // Verificar se o curso tem teacherId
+    if (!course.teacherId) {
+      console.warn(`Course ${course.name} has no teacherId`);
+      return false;
+    }
+    
     // Verificação principal: o professor é o responsável pelo curso
-    const isTeacherOfCourse = course.teacherId === currentTeacher.id;
+    // Usando função compareIds para lidar com diferentes tipos
+    const isTeacherOfCourse = compareIds(course.teacherId, currentTeacher.id);
     
     // Verificação secundária: o curso está na lista de cursos do professor (se existir)
-    const isInTeacherCourses = currentTeacher?.courses?.includes(course.id);
+    // Usando função para verificar se o ID do curso está na lista de cursos do professor
+    const isInTeacherCourses = Array.isArray(currentTeacher?.courses) && 
+      currentTeacher.courses.some(courseId => compareIds(courseId, course.id));
     
-    // Log para depuração
-    console.log(`Curso: ${course.name}, ID: ${course.id}, teacherId: ${course.teacherId}, Professor ID: ${currentTeacher.id}, Está na lista do professor: ${isInTeacherCourses}`);
+    // Log para depuração mais claro
+    console.log(`Curso: ${course.name}`, {
+      cursoId: course.id,
+      teacherId: course.teacherId,
+      professorId: currentTeacher.id,
+      isTeacherOfCourse,
+      isInTeacherCourses
+    });
     
     // Retorna verdadeiro se alguma das condições for verdadeira
     return isTeacherOfCourse || isInTeacherCourses;

@@ -245,42 +245,91 @@ const FormProfessor: React.FC = () => {
     }
   }, [currentTeacher, isEditMode]);
 
-  // Buscar dados do professor para edição
+  // Flag para controlar se já buscamos os dados do professor
+  const [teacherFetched, setTeacherFetched] = useState(false);
+  
+  // Buscar dados do professor para edição - apenas uma vez
   useEffect(() => {
-    if (isEditMode && id) {
-      dispatch(fetchTeacherById(Number(id)));
+    // Só busca o professor se estivermos em modo de edição, temos um ID e ainda não buscamos
+    if (isEditMode && id && !teacherFetched) {
+      console.log('Fetching teacher with ID:', id);
+      dispatch(fetchTeacherById(id));
+      setTeacherFetched(true); // Marca que já buscamos o professor
     }
 
-    dispatch(fetchCourses());
+    // Buscar cursos apenas uma vez
+    if (!teacherFetched) {
+      dispatch(fetchCourses());
+    }
 
     return () => {
       dispatch(clearCurrentTeacher());
     };
-  }, [dispatch, id, isEditMode]);
+  }, [dispatch, id, isEditMode, teacherFetched]);
 
+  // Debug para verificar o estado do currentTeacher - reduzido para evitar logs excessivos
+  useEffect(() => {
+    if (currentTeacher) {
+      console.log('Current Teacher Data updated, has ID:', currentTeacher.id);
+    }
+  }, [currentTeacher]);
+  
   // Preencher formulário com dados do professor em modo de edição
   useEffect(() => {
     if (isEditMode && currentTeacher) {
+      console.log('Attempting to reset form with data:', currentTeacher);
+      
+      // Verificar dados críticos antes de prosseguir
+      if (!currentTeacher.fullName) {
+        console.warn('Warning: Teacher data missing fullName');
+      }
+      
+      if (!currentTeacher.address) {
+        console.warn('Warning: Teacher data missing address, creating default');
+        // @ts-ignore - Criar um objeto address padrão se não existir
+        currentTeacher.address = {
+          street: '',
+          number: '',
+          district: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          complement: ''
+        };
+      }
+      
       // Reset form with current teacher data
       const formData: TeacherFormData = {
-        fullName: currentTeacher.fullName,
-        cpf: currentTeacher.cpf,
-        birthDate: currentTeacher.birthDate,
+        fullName: currentTeacher.fullName || '',
+        cpf: currentTeacher.cpf || '',
+        birthDate: currentTeacher.birthDate || '',
         address: {
-          ...currentTeacher.address,
+          street: currentTeacher.address.street || '',
+          number: currentTeacher.address.number || '',
+          district: currentTeacher.address.district || '',
+          city: currentTeacher.address.city || '',
+          state: currentTeacher.address.state || '',
+          zipCode: currentTeacher.address.zipCode || '',
           // Garantir que complement seja string vazia se for undefined
           complement: currentTeacher.address.complement || '',
         },
-        phone: currentTeacher.phone,
-        email: currentTeacher.email,
-        bio: currentTeacher.bio,
-        education: currentTeacher.education,
-        specializations: currentTeacher.specializations || [],
-        status: currentTeacher.status,
+        phone: currentTeacher.phone || '',
+        email: currentTeacher.email || '',
+        bio: currentTeacher.bio || '',
+        education: currentTeacher.education || '',
+        specializations: Array.isArray(currentTeacher.specializations) ? currentTeacher.specializations : [],
+        status: currentTeacher.status || 'active',
         type: currentTeacher.type || 'employee',
       };
 
+      console.log('Form data prepared for reset:', formData);
       reset(formData);
+      console.log('Form reset completed');
+      
+      // Atualizar especializações
+      if (Array.isArray(currentTeacher.specializations)) {
+        setSpecializations(currentTeacher.specializations);
+      }
     }
   }, [currentTeacher, isEditMode, reset]);
 
@@ -388,9 +437,21 @@ const FormProfessor: React.FC = () => {
     }
   };
 
+  // Controle para evitar múltiplas submissões simultâneas
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Submeter formulário
   const onSubmit = async (data: any) => {
+    // Evitar múltiplas submissões
+    if (isSubmitting) {
+      console.log('Form already submitting, ignoring duplicate submission');
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+      console.log('Submitting form with data:', data);
+
       if (isEditMode && currentTeacher) {
         // Update existing teacher
         const updatedTeacher: Teacher = {
@@ -416,7 +477,9 @@ const FormProfessor: React.FC = () => {
           courses: currentTeacher.courses || [],
         };
 
-        await dispatch(updateTeacher(updatedTeacher));
+        console.log('Dispatching updateTeacher with:', updatedTeacher);
+        const result = await dispatch(updateTeacher(updatedTeacher));
+        console.log('Update teacher result:', result);
       } else {
         // Create new teacher
         const newTeacher: Omit<Teacher, 'id'> = {
@@ -441,12 +504,22 @@ const FormProfessor: React.FC = () => {
           documents: [],
         };
 
-        await dispatch(createTeacher(newTeacher));
+        console.log('Dispatching createTeacher with:', newTeacher);
+        const result = await dispatch(createTeacher(newTeacher));
+        console.log('Create teacher result:', result);
       }
 
-      navigate('/professores');
+      console.log('Form submitted successfully, navigating to /professores');
+      // Resetar o estado antes de navegar para evitar problemas
+      dispatch(clearCurrentTeacher());
+      // Usar setTimeout para garantir que o estado seja atualizado antes de navegar
+      setTimeout(() => {
+        setIsSubmitting(false);
+        navigate('/professores');
+      }, 100);
     } catch (error) {
       console.error('Erro ao salvar professor:', error);
+      setIsSubmitting(false);
     }
   };
 
