@@ -16,7 +16,25 @@ export const fetchStudents = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/api/alunos');
-      return response.data;
+      
+      // Verificar a estrutura dos dados e extrair corretamente
+      if (response.data && response.data.data && Array.isArray(response.data.data.students)) {
+        // Estrutura aninhada com data.students
+        console.log('Dados recebidos da API com estrutura aninhada:', response.data.data.students);
+        return response.data.data.students;
+      } else if (response.data && Array.isArray(response.data.students)) {
+        // Estrutura com students no primeiro nível
+        console.log('Dados recebidos da API com students no primeiro nível:', response.data.students);
+        return response.data.students;
+      } else if (Array.isArray(response.data)) {
+        // Array direto
+        console.log('Dados recebidos da API como array direto:', response.data);
+        return response.data;
+      } else {
+        // Formato desconhecido, retornar array vazio e logar para depuração
+        console.error('Formato de resposta desconhecido da API /api/alunos:', response.data);
+        return [];
+      }
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -46,7 +64,17 @@ export const createStudent = createAsyncThunk(
   async (student: Omit<Student, 'id'>, { rejectWithValue }) => {
     try {
       const response = await api.post('/api/alunos', student);
-      return response.data;
+      
+      // Verificar e processar a resposta corretamente
+      console.log('Resposta da API ao criar aluno:', response.data);
+      
+      if (response.data && response.data.data) {
+        // Se a resposta estiver aninhada em data
+        return response.data.data;
+      } else {
+        // Se a resposta estiver diretamente no primeiro nível
+        return response.data;
+      }
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);

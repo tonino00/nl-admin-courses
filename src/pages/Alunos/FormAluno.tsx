@@ -246,9 +246,15 @@ const FormAluno: React.FC = () => {
     }
   };
 
+  // Estado local para gerenciar erro específico do formulário
+  const [formError, setFormError] = useState<string | null>(null);
+  
   // Submeter formulário
   const onSubmit = async (data: StudentFormData) => {
+    setFormError(null);
     try {
+      let result;
+      
       if (isEditMode && currentStudent) {
         // Update existing student
         const updatedStudent: Student = {
@@ -256,7 +262,7 @@ const FormAluno: React.FC = () => {
           ...data,
         };
 
-        await dispatch(updateStudent(updatedStudent));
+        result = await dispatch(updateStudent(updatedStudent));
       } else {
         // Create new student
         const newStudent = {
@@ -267,12 +273,19 @@ const FormAluno: React.FC = () => {
           certificates: [],
         };
 
-        await dispatch(createStudent(newStudent as Omit<Student, 'id'>));
+        result = await dispatch(createStudent(newStudent as Omit<Student, 'id'>));
       }
-
-      navigate('/alunos');
+      
+      // Verificar se a operação foi bem-sucedida (sem rejection)
+      if (result.type.endsWith('/fulfilled')) {
+        navigate('/alunos');
+      } else {
+        // Se chegar aqui, houve um erro na action que não lançou uma exceção
+        setFormError('Erro ao salvar aluno. Verifique os dados e tente novamente.');
+      }
     } catch (error) {
       console.error('Erro ao salvar aluno:', error);
+      setFormError(error instanceof Error ? error.message : 'Erro ao salvar aluno. Tente novamente.');
     }
   };
 
@@ -305,9 +318,9 @@ const FormAluno: React.FC = () => {
         </Typography>
       </Box>
 
-      {error && (
+      {(error || formError) && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
+          {error || formError}
         </Alert>
       )}
 

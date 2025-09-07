@@ -195,7 +195,23 @@ const ListaAlunos: React.FC = () => {
             </Box>
           ) : (
             <DataGrid
-              rows={Array.isArray(filteredStudents) ? filteredStudents : []}
+              rows={
+                Array.isArray(filteredStudents) 
+                  ? filteredStudents.map(student => {
+                      // Criar uma cópia do objeto para evitar mutação
+                      const processedStudent = {...student};
+                      
+                      // Verificar se há um _id na resposta da API (objeto sem tipagem forte)
+                      // @ts-ignore - ignorando erro de tipagem, pois _id pode existir na resposta da API
+                      if (processedStudent._id && !processedStudent.id) {
+                        // @ts-ignore - atribuir _id como id
+                        processedStudent.id = processedStudent._id;
+                      }
+                      
+                      return processedStudent;
+                    })
+                  : []
+              }
               columns={columns}
               initialState={{
                 pagination: {

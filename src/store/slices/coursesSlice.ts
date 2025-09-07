@@ -29,6 +29,11 @@ export const fetchCourses = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/api/cursos');
+      // Verifica se response.data é um array antes de usar .map
+      if (!Array.isArray(response.data)) {
+        console.error('Resposta da API de cursos não é um array:', response.data);
+        return [];
+      }
       // Normaliza cada curso antes de retornar
       const normalizedCourses = response.data.map((course: any) => normalizeCourse(course));
       return normalizedCourses;
