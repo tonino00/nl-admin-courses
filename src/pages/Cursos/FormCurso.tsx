@@ -62,8 +62,11 @@ const courseSchema = yup.object({
     .required('Total de vagas é obrigatório')
     .positive('Total de vagas deve ser positivo'),
   teacherId: yup
-    .number()
-    .typeError('Selecione um professor')
+    .mixed()
+    .test('is-valid-id', 'Selecione um professor', (value) => {
+      // Aceitar valor como string ou número, mas não pode ser vazio
+      return value !== undefined && value !== null && value !== '' && value !== 0;
+    })
     .required('Professor é obrigatório'),
   status: yup.string().required('Status é obrigatório'),
   prerequisites: yup.array().of(yup.number()),
@@ -116,7 +119,7 @@ const FormCurso: React.FC = () => {
       workload: 0,
       shifts: [],
       totalSpots: 0,
-      teacherId: 0,
+      teacherId: '', // Usar string vazia para permitir tanto string quanto number
       status: 'active',
       prerequisites: [],
       schedule: [{ day: 'Monday', start: '08:00', end: '10:00' }],
@@ -184,6 +187,13 @@ const FormCurso: React.FC = () => {
           currentCourse.totalSpots - currentCourse.availableSpots;
         availableSpots = data.totalSpots - spotsDifference;
       }
+      
+      // Garantir que teacherId seja tratado corretamente (string ou number)
+      // Converter para um tipo válido que a API aceita
+      const teacherId = data.teacherId ? 
+        (typeof data.teacherId === 'string' ? data.teacherId : String(data.teacherId)) : 
+        '';
+      console.log('TeacherId antes do envio:', teacherId, 'Tipo:', typeof teacherId);
 
       // Preparando o objeto com todos os campos necessários
       const courseData: Omit<Course, 'id'> = {
@@ -198,7 +208,7 @@ const FormCurso: React.FC = () => {
           (p): p is number => p !== undefined
         ),
         schedule: data.schedule || [],
-        teacherId: data.teacherId,
+        teacherId, // Usar o valor tratado
         status: data.status as 'active' | 'inactive',
       };
 
@@ -385,6 +395,10 @@ const FormCurso: React.FC = () => {
                       label="Professor Responsável"
                       value={field.value || ''}
                       disabled={teachersLoading}
+                      onChange={(e) => {
+                        console.log('Professor selecionado:', e.target.value, 'Tipo:', typeof e.target.value);
+                        field.onChange(e);
+                      }}
                     >
                       {teachersLoading ? (
                         <MenuItem value="">Carregando professores...</MenuItem>

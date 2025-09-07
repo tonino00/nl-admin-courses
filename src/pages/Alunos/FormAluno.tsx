@@ -163,16 +163,22 @@ const FormAluno: React.FC = () => {
     });
   }, [register]);
 
+  // Flag para controlar se já buscamos os dados
+  const [dataFetched, setDataFetched] = useState(false);
+
   // Buscar dados do aluno para edição
   useEffect(() => {
-    if (isEditMode && id) {
-      dispatch(fetchStudentById(Number(id)));
+    if (isEditMode && id && !dataFetched) {
+      console.log('Buscando aluno com ID:', id, 'Tipo:', typeof id);
+      // Usar o id diretamente como string, sem converter para Number
+      dispatch(fetchStudentById(id));
+      setDataFetched(true); // Marcar que já buscamos os dados
     }
 
     return () => {
       dispatch(clearCurrentStudent());
     };
-  }, [dispatch, id, isEditMode]);
+  }, [dispatch, id, isEditMode, dataFetched]);
 
   // Preencher formulário com dados do aluno em modo de edição
   useEffect(() => {

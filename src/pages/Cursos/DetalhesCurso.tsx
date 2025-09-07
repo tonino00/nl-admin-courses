@@ -112,8 +112,10 @@ const DetalhesCurso: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchCourseById(Number(id)));
-      dispatch(fetchEnrollmentsByCourse(Number(id)));
+      // Usar ID como string diretamente sem converter para número
+      console.log('Buscando detalhes do curso com ID:', id, 'Tipo:', typeof id);
+      dispatch(fetchCourseById(id));
+      dispatch(fetchEnrollmentsByCourse(id));
       dispatch(fetchStudents()); // Buscar todos os alunos para mapear nomes
       dispatch(fetchTeachers()); // Buscar todos os professores
     }
@@ -129,7 +131,8 @@ const DetalhesCurso: React.FC = () => {
 
   const confirmDelete = async () => {
     if (id) {
-      await dispatch(deleteCourse(Number(id))).unwrap();
+      // Passar o ID diretamente sem conversão para número
+      await dispatch(deleteCourse(id)).unwrap();
       navigate('/cursos');
     }
   };
@@ -153,15 +156,24 @@ const DetalhesCurso: React.FC = () => {
     return <Alert severity="warning">Curso não encontrado</Alert>;
   }
 
+  // Função auxiliar para comparar IDs (string ou number)
+  const compareIds = (id1: any, id2: any): boolean => {
+    // Se ambos são iguais diretamente (mesmo tipo e valor)
+    if (id1 === id2) return true;
+    // Converter para string e comparar
+    return String(id1) === String(id2);
+  };
+  
+  // Encontrar o professor do curso usando comparação segura de IDs
   const courseTeacher = teachers.find(
-    (teacher: Teacher) => teacher.id === currentCourse.teacherId
+    (teacher: Teacher) => compareIds(teacher.id, currentCourse.teacherId)
   );
 
-  // Encontra os cursos de pré-requisito
+  // Encontra os cursos de pré-requisito usando comparação segura de IDs
   const prerequisiteCourses =
     currentCourse.prerequisites
-      ?.map((prereqId: number) =>
-        courses.find((course: Course) => course.id === prereqId)
+      ?.map((prereqId: number | string) =>
+        courses.find((course: Course) => compareIds(course.id, prereqId))
       )
       .filter(Boolean) || [];
 

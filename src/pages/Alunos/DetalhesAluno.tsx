@@ -76,13 +76,21 @@ const DetalhesAluno: React.FC = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState<number | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   
+  // Flag para controlar se os dados já foram buscados
+  const [dataFetched, setDataFetched] = useState(false);
+  
   useEffect(() => {
-    if (id) {
-      dispatch(fetchStudentById(Number(id)) as any);
+    if (id && !dataFetched) {
+      console.log('Buscando dados do aluno com ID:', id);
+      
+      // Usar o id como string diretamente, sem converter para Number
+      dispatch(fetchStudentById(id) as any);
       dispatch(fetchCourses() as any);
-      dispatch(fetchEnrollmentsByStudent(Number(id)) as any);
+      dispatch(fetchEnrollmentsByStudent(id) as any);
+      
+      setDataFetched(true);
     }
-  }, [dispatch, id]);
+  }, [dispatch, id, dataFetched]);
   
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -113,12 +121,18 @@ const DetalhesAluno: React.FC = () => {
   
   const handleUnenroll = () => {
     if (selectedEnrollment && id) {
-      dispatch(deleteEnrollment({id: selectedEnrollment, studentId: Number(id)}) as any)
+      // Usar type assertion para informar ao TypeScript que o parâmetro é compatível
+      // Isso é seguro já que modificamos a função deleteEnrollment para aceitar string | number
+      dispatch(deleteEnrollment({
+        id: selectedEnrollment, 
+        studentId: id // O ID já é do tipo string que é aceito pela função modificada
+      }) as any)
         .unwrap()
         .then(() => {
           // Atualizar lista de matrículas após desmatrícula bem-sucedida
           if (id) {
-            dispatch(fetchEnrollmentsByStudent(Number(id)) as any);
+            // Usar o ID como string também aqui
+            dispatch(fetchEnrollmentsByStudent(id) as any);
           }
         })
         .catch((error: any) => {
@@ -157,8 +171,18 @@ const DetalhesAluno: React.FC = () => {
     );
   }
   
-  // Find student's enrollments
-  const studentEnrollments = enrollments.filter((enrollment) => enrollment.studentId === Number(id));
+  // Função para comparar IDs que podem ser string ou number
+  const compareIds = (id1: any, id2: any): boolean => {
+    // Se são iguais diretamente (mesmo tipo e valor)
+    if (id1 === id2) return true;
+    // Converter para string e comparar
+    return String(id1) === String(id2);
+  };
+
+  // Find student's enrollments usando comparação segura de IDs
+  const studentEnrollments = enrollments.filter((enrollment) => 
+    id && compareIds(enrollment.studentId, id)
+  );
   const activeEnrollments = studentEnrollments.filter((enrollment) => enrollment.status === 'active');
   const courseIds = activeEnrollments.map((enrollment) => enrollment.courseId);
   

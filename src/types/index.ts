@@ -68,9 +68,13 @@ export interface Course {
   shifts: ('morning' | 'afternoon' | 'night')[];
   totalSpots: number;
   availableSpots: number;
-  prerequisites: number[];
-  schedule: Schedule[];
-  teacherId: number;
+  prerequisites?: number[];
+  schedule?: {
+    day: string;
+    start: string;
+    end: string;
+  }[];
+  teacherId: string | number;
   status: 'active' | 'inactive';
 }
 

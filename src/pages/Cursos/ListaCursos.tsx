@@ -305,6 +305,17 @@ const ListaCursos: React.FC = () => {
           <DataGrid
             rows={courses}
             columns={columns}
+            getRowId={(row) => {
+              // Função para garantir que cada linha tenha um ID único
+              // Tenta usar propriedades conhecidas em ordem de prioridade
+              if (row.id) return row.id;
+              if (row._id) return row._id;
+              if (row.data && row.data.course && (row.data.course.id || row.data.course._id)) {
+                return row.data.course.id || row.data.course._id;
+              }
+              // Fallback para um ID gerado em último caso
+              return `row-${Math.random().toString(36).substr(2, 9)}`;
+            }}
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
               columns: {

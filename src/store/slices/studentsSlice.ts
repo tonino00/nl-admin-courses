@@ -46,11 +46,40 @@ export const fetchStudents = createAsyncThunk(
 
 export const fetchStudentById = createAsyncThunk(
   'students/fetchById',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string | number, { rejectWithValue }) => {
     try {
+      if (!id) {
+        return rejectWithValue('ID do aluno inválido');
+      }
+
+      console.log('Buscando aluno na API com ID:', id, 'Tipo:', typeof id);
       const response = await api.get(`/api/alunos/${id}`);
-      return response.data;
+      
+      // Log para depuração da estrutura dos dados
+      console.log('Resposta da API para busca de aluno:', response.data);
+      
+      // Verificar a estrutura da resposta e processar adequadamente
+      let studentData;
+      
+      if (response.data && response.data.data && response.data.data.student) {
+        // Estrutura aninhada
+        studentData = response.data.data.student;
+      } else if (response.data && response.data.student) {
+        // No primeiro nível
+        studentData = response.data.student;
+      } else {
+        // Assume que é o próprio objeto
+        studentData = response.data;
+      }
+      
+      // Se o aluno for encontrado mas não tiver id, usar o _id
+      if (studentData && !studentData.id && studentData._id) {
+        studentData.id = studentData._id;
+      }
+      
+      return studentData;
     } catch (error) {
+      console.error('Erro ao buscar aluno por ID:', error);
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }
@@ -147,9 +176,40 @@ const studentsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchStudentById.fulfilled, (state, action: PayloadAction<Student>) => {
+      .addCase(fetchStudentById.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.currentStudent = action.payload;
+        
+        // Log do payload recebido para depuração
+        console.log('Student payload received in reducer:', action.payload);
+        
+        // Se não houver payload, manter o estado anterior
+        if (!action.payload) {
+          console.warn('Student payload is empty or null');
+          return;
+        }
+        
+        // Criar um objeto Student normalizado
+        const student = {
+          ...action.payload,
+          // Garantir que o id seja válido (usar _id do MongoDB se necessário)
+          id: action.payload.id || action.payload._id,
+          // Garantir que outros campos obrigatórios existam
+          address: action.payload.address || {
+            street: '',
+            number: '',
+            district: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            complement: ''
+          },
+          documents: Array.isArray(action.payload.documents) ? action.payload.documents : [],
+          enrollments: Array.isArray(action.payload.enrollments) ? action.payload.enrollments : [],
+          grades: Array.isArray(action.payload.grades) ? action.payload.grades : [],
+          certificates: Array.isArray(action.payload.certificates) ? action.payload.certificates : [],
+        };
+        
+        state.currentStudent = student;
       })
       .addCase(fetchStudentById.rejected, (state, action) => {
         state.loading = false;
