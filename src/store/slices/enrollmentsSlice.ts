@@ -112,6 +112,15 @@ export const fetchEnrollmentsByCourse = createAsyncThunk(
   'enrollments/fetchByCourse',
   async (courseId: string | number, { rejectWithValue }) => {
     try {
+      // Validar se o ID do curso está no formato válido para MongoDB ObjectId
+      const courseIdStr = String(courseId);
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(courseIdStr);
+      
+      if (!isValidObjectId) {
+        console.error(`ID inválido para MongoDB ObjectId: ${courseIdStr}`);
+        return rejectWithValue(`ID inválido para curso: ${courseIdStr}. Deve ser um MongoDB ObjectId válido.`);
+      }
+      
       // Busca todos os alunos para encontrar as matrículas do curso específico
       const response = await api.get('/api/alunos');
       const students = response.data;
@@ -158,10 +167,62 @@ export const createEnrollment = createAsyncThunk(
   'enrollments/create',
   async (enrollment: Omit<EnrollmentFull, 'id'>, { rejectWithValue }) => {
     try {
-      // Primeiro buscamos o aluno
-      const studentResponse = await api.get(`/api/alunos/${enrollment.studentId}`);
-      const student = studentResponse.data;
+      // Validar se o studentId existe
+      if (enrollment.studentId === undefined || enrollment.studentId === null) {
+        console.error('ERRO CRÍTICO: studentId é indefinido ou nulo', JSON.stringify(enrollment));
+        return rejectWithValue('ID do aluno é obrigatório para criar uma matrícula');
+      }
       
+      // Garantir que não estamos tratando a string literal "undefined"
+      if (String(enrollment.studentId) === "undefined") {
+        console.error('ERRO CRÍTICO: studentId é a string literal "undefined"', JSON.stringify(enrollment));
+        return rejectWithValue('ID do aluno inválido ("undefined")');
+      }
+      
+      // Garantir que temos uma string utilizável como ID
+      const studentId = String(enrollment.studentId).trim();
+      if (!studentId || studentId === "undefined") {
+        console.error('ERRO: studentId está vazio ou é "undefined" após conversão para string', enrollment);
+        return rejectWithValue('ID do aluno inválido ou vazio');
+      }
+      
+      console.log('Criando matrícula para o aluno:', studentId, 'tipo original:', typeof enrollment.studentId);
+      
+      // Verificação de segurança final para evitar requisição com o texto "undefined" como ID
+      if (studentId === "undefined") {
+        console.error('ERRO FATAL: Tentativa de acessar a API com o texto literal "undefined" como ID');
+        return rejectWithValue('ID do aluno inválido - não é possível processar "undefined" como ID');
+      }
+      
+      // MongoDB requer IDs válidos, não a string "undefined"
+      console.log(`Fazendo requisição GET para /api/alunos/${studentId}`);
+      
+      let student;
+      try {
+        const studentResponse = await api.get(`/api/alunos/${studentId}`);
+        student = studentResponse.data;
+        
+        if (!student) {
+          console.error(`Aluno com ID ${studentId} não encontrado na API`);
+          return rejectWithValue(`Aluno com ID ${studentId} não encontrado`);
+        }
+        
+        console.log('Dados do aluno recebidos da API:', student);
+      
+      // Log adicional para inspeção detalhada da estrutura da resposta
+      console.log('Estrutura da resposta da API:', {
+        tipoResposta: typeof student,
+        temStatusSuccess: student?.status === 'success',
+        temData: !!student?.data,
+        statusAluno: student?.status || 'não definido',
+        // Se tiver objeto aninhado, mostrar seu status também
+        statusAlunoInterno: student?.data?.status || 'não definido'
+      });
+      } catch (apiError) {
+        console.error(`Erro na chamada à API para o aluno ${studentId}:`, apiError);
+        return rejectWithValue(`Erro ao acessar dados do aluno: ${apiError instanceof Error ? apiError.message : 'Erro desconhecido'}`);
+      }
+    
       // Adicionamos a matrícula à lista de matrículas do aluno
       if (!student.enrollments) {
         student.enrollments = [];
@@ -173,16 +234,80 @@ export const createEnrollment = createAsyncThunk(
         id: Date.now() // Isso é uma simplificação, idealmente o backend cuidaria disso
       };
       
-      student.enrollments.push(newEnrollment);
+      // Garantir que o objeto student tem estrutura válida para a API
+      // Verificar se temos a estrutura de resposta da API contendo status: 'success'
+      // e não misturar com o status do aluno que deve ser 'active' ou 'inactive'
+      let studentData = student;
       
-      // Atualizamos o aluno com a nova matrícula
-      const updateResponse = await api.put(`/api/alunos/${enrollment.studentId}`, student);
+      // Verificar se estamos lidando com uma resposta da API que tem estrutura aninhada
+      if (student && typeof student === 'object') {
+        // Se tiver uma propriedade status com valor 'success', significa que estamos lidando 
+        // com a estrutura de resposta da API e não com o objeto student diretamente
+        if (student.status === 'success' && student.data) {
+          console.log('Detectada estrutura de resposta da API com status "success"');
+          // Usar o objeto student dentro da estrutura de resposta
+          studentData = student.data;
+        }
+      }
       
-      // Retornamos a matrícula criada com dados completos
-      return {
-        ...newEnrollment,
-        studentName: student.fullName
+      // Garantir que o status do aluno é um valor válido ('active' ou 'inactive')
+      const studentPayload = {
+        ...studentData,
+        // Forçar o status para 'active' se não for um valor válido
+        status: studentData.status === 'active' || studentData.status === 'inactive' 
+          ? studentData.status : 'active',
+        // Garantir que enrollments é um array válido mesmo se student.enrollments for undefined
+        enrollments: Array.isArray(studentData.enrollments) 
+          ? [...studentData.enrollments, newEnrollment] 
+          : [newEnrollment]
       };
+      
+      // Verificar se o objeto possui outros campos essenciais
+      if (!studentPayload.fullName) {
+        console.warn('O objeto student não tem fullName, adicionando do enrollment se possível');
+        studentPayload.fullName = enrollment.studentName || 'Nome não disponível';
+      }
+      
+      // Garantir que o objeto enviado para a API contém apenas campos válidos
+      // Remover campos que possam causar problemas de validação
+      const validStudentPayload = {
+        fullName: studentPayload.fullName,
+        email: studentPayload.email || '',
+        phone: studentPayload.phone || '',
+        cpf: studentPayload.cpf || '',
+        rg: studentPayload.rg || '',
+        birthDate: studentPayload.birthDate || '',
+        mothersName: studentPayload.mothersName || '',
+        address: studentPayload.address || {},
+        status: 'active', // Forçar status válido
+        documents: studentPayload.documents || [],
+        enrollments: studentPayload.enrollments || [],
+        grades: studentPayload.grades || [],
+        certificates: studentPayload.certificates || []
+      };
+      
+      // Log do payload final limpo
+      console.log('Payload final limpo para envio à API:', validStudentPayload);
+      
+      try {
+        // Atualizamos o aluno com a nova matrícula usando o payload validado
+        console.log(`Enviando PUT para /api/alunos/${studentId} com dados:`, JSON.stringify(validStudentPayload));
+        const updateResponse = await api.put(`/api/alunos/${studentId}`, validStudentPayload);
+        
+        console.log('Resposta da API após PUT:', updateResponse.data);
+        
+        // Retornamos a matrícula criada com dados completos
+        return {
+          ...newEnrollment,
+          studentName: studentPayload.fullName
+        };
+      } catch (putError) {
+        console.error(`Erro na chamada PUT para atualizar aluno ${studentId}:`, putError);
+        if (putError instanceof Error) {
+          return rejectWithValue(`Erro ao atualizar aluno: ${putError.message}`);
+        }
+        return rejectWithValue(`Erro ao atualizar aluno com nova matrícula`);
+      }
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);

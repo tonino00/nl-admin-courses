@@ -77,7 +77,7 @@ interface Evaluation {
 // Utilizando um tipo de interseção em vez de extensão para evitar colisões de propriedades
 type ExtendedEnrollment = EnrollmentFull & {
   student: {
-    id: number;
+    id: string | number; // Aceitando string ou number para compatibilidade com MongoDB IDs
     name: string;
   };
   evaluations: Evaluation[];
@@ -108,7 +108,7 @@ function convertToExtendedEnrollment(enrollment: EnrollmentFull, student?: Stude
   return {
     ...enrollment,
     student: {
-      id: enrollment.studentId,
+      id: String(enrollment.studentId), // Convertendo para string para uniformidade
       name: student ? student.fullName : `Aluno ${enrollment.studentId}` // Usa nome real do aluno ou valor padrão
     },
     evaluations: evaluations,
@@ -197,7 +197,8 @@ const FrequenciaAvaliacao: React.FC = () => {
   
   const [tabValue, setTabValue] = useState(0);
   const [attendanceDate, setAttendanceDate] = useState(moment().format('YYYY-MM-DD'));
-  const [attendanceRecords, setAttendanceRecords] = useState<Record<number, boolean>>({});
+  // Atualizar o tipo para aceitar string ou number como chave
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, boolean>>({});
   const [savedAttendanceDates, setSavedAttendanceDates] = useState<string[]>([]); 
   const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState<ExtendedEnrollment | null>(null);
@@ -281,20 +282,27 @@ const FrequenciaAvaliacao: React.FC = () => {
       console.log('Carregando alunos para as matrículas:', enrollmentsRaw);
       
       // Obter IDs únicos de estudantes de todas as matrículas
-      const studentIdsSet = new Set<number>();
-      enrollmentsRaw.forEach((e: EnrollmentFull) => e.studentId && studentIdsSet.add(e.studentId));
+      // Usamos string como tipo para o Set, já que os IDs podem ser string ou number
+      const studentIdsSet = new Set<string>();
+      enrollmentsRaw.forEach((e: EnrollmentFull) => {
+        if (e.studentId) {
+          // Converter para string para garantir compatibilidade
+          studentIdsSet.add(String(e.studentId));
+        }
+      });
       const studentIds = Array.from(studentIdsSet);
       console.log('IDs de estudantes a carregar:', studentIds);
       
       // Para cada ID de estudante, buscar os dados completos
-      studentIds.forEach((studentId: number) => {
-        console.log('Buscando dados do estudante ID:', studentId);
-        dispatch(fetchStudentById(studentId)).unwrap()
+      studentIds.forEach((studentIdStr: string) => {
+        console.log('Buscando dados do estudante ID:', studentIdStr);
+        // Passar o ID para a função fetchStudentById
+        dispatch(fetchStudentById(studentIdStr)).unwrap()
           .then((student: Student) => {
-            console.log(`Dados do estudante ID ${studentId} carregados:`, student);
+            console.log(`Dados do estudante ID ${studentIdStr} carregados:`, student);
           })
           .catch((error: Error) => {
-            console.error(`Erro ao carregar estudante ID ${studentId}:`, error);
+            console.error(`Erro ao carregar estudante ID ${studentIdStr}:`, error);
           });
       });
     }
@@ -310,7 +318,7 @@ const FrequenciaAvaliacao: React.FC = () => {
     setAttendanceDate(newDate);
     
     // Carregar os registros de presença existentes para a data selecionada
-    const newAttendanceRecords: Record<number, boolean> = {};
+    const newAttendanceRecords: Record<string, boolean> = {};
     
     // Para cada matrícula, verificar se existe registro para a data selecionada
     enrollments.forEach((enrollment) => {
@@ -318,12 +326,15 @@ const FrequenciaAvaliacao: React.FC = () => {
         (record) => record.date === newDate
       );
       
+      // Converter studentId para string para usar como chave no objeto
+      const studentIdKey = String(enrollment.studentId);
+      
       // Se existir registro para esta data, usar o valor existente
       if (attendanceForDate) {
-        newAttendanceRecords[enrollment.studentId] = attendanceForDate.present;
+        newAttendanceRecords[studentIdKey] = attendanceForDate.present;
       } else {
         // Se não existir, inicializar como falso (ausente)
-        newAttendanceRecords[enrollment.studentId] = false;
+        newAttendanceRecords[studentIdKey] = false;
       }
     });
     
@@ -336,7 +347,7 @@ const FrequenciaAvaliacao: React.FC = () => {
     setAttendanceDate(date);
     
     // Carregar os registros de presença para a data selecionada
-    const newAttendanceRecords: Record<number, boolean> = {};
+    const newAttendanceRecords: Record<string, boolean> = {};
     
     // Para cada matrícula, verificar se existe registro para a data selecionada
     enrollments.forEach((enrollment) => {
@@ -344,12 +355,15 @@ const FrequenciaAvaliacao: React.FC = () => {
         (record) => record.date === date
       );
       
+      // Converter studentId para string para usar como chave
+      const studentIdKey = String(enrollment.studentId);
+      
       // Se existir registro para esta data, usar o valor existente
       if (attendanceForDate) {
-        newAttendanceRecords[enrollment.studentId] = attendanceForDate.present;
+        newAttendanceRecords[studentIdKey] = attendanceForDate.present;
       } else {
         // Se não existir, inicializar como falso (ausente)
-        newAttendanceRecords[enrollment.studentId] = false;
+        newAttendanceRecords[studentIdKey] = false;
       }
     });
     
@@ -357,10 +371,12 @@ const FrequenciaAvaliacao: React.FC = () => {
     setAttendanceRecords(newAttendanceRecords);
   };
   
-  const toggleAttendance = (studentId: number) => {
-    setAttendanceRecords((prev: Record<number, boolean>) => ({
+  const toggleAttendance = (studentId: string | number) => {
+    // Converter para string para usar como chave do objeto
+    const studentIdKey = String(studentId);
+    setAttendanceRecords((prev: Record<string, boolean>) => ({
       ...prev,
-      [studentId]: !prev[studentId]
+      [studentIdKey]: !prev[studentIdKey]
     }));
   };
 
@@ -368,11 +384,13 @@ const FrequenciaAvaliacao: React.FC = () => {
     // For each student in attendance records, update their enrollment with the new attendance data
     try {
       for (const enrollment of enrollments) {
-        if (attendanceRecords[enrollment.studentId] !== undefined) {
+        // Converter studentId para string para usar como chave
+        const studentIdKey = String(enrollment.studentId);
+        if (attendanceRecords[studentIdKey] !== undefined) {
           const existingAttendance = enrollment.attendance || [];
           const newAttendanceRecord: AttendanceRecord = {
             date: attendanceDate,
-            present: attendanceRecords[enrollment.studentId]
+            present: attendanceRecords[studentIdKey]
           };
 
           // Check if there's already an attendance record for this date
@@ -705,7 +723,7 @@ const FrequenciaAvaliacao: React.FC = () => {
                     </TableCell>
                     <TableCell align="center">
                       <Checkbox
-                        checked={!!attendanceRecords[enrollment.studentId]}
+                        checked={!!attendanceRecords[String(enrollment.studentId)]}
                         onChange={() => toggleAttendance(enrollment.studentId)}
                         color="primary"
                         size={isMobile ? "small" : "medium"}

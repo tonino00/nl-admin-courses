@@ -18,7 +18,8 @@ export interface Document {
 
 // Common Person Type
 export interface Person {
-  id: number;
+  id: number | string; // Suporte para MongoDB ObjectId (string) ou id numérico
+  _id?: string;       // Campo _id do MongoDB, opcional
   fullName: string;
   cpf: string;
   rg: string;
@@ -97,8 +98,8 @@ export interface Enrollment {
 // Full Enrollment Type (for API)
 export interface EnrollmentFull {
   id: number;
-  studentId: number;
-  courseId: number;
+  studentId: number | string; // Suporte para IDs MongoDB (string) ou numéricos
+  courseId: number | string; // Suporte para IDs MongoDB (string) ou numéricos
   studentName?: string; // Nome do aluno para facilitar a exibição sem precisar consultar a tabela de estudantes
   enrollmentDate: string;
   status: 'active' | 'completed' | 'canceled';

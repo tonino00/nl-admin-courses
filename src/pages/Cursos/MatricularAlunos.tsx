@@ -44,7 +44,13 @@ import { formatDateToBR } from '../../utils/masks';
 
 const MatricularAlunos: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const courseId = id ? parseInt(id, 10) : 0;
+  
+  // Validar se o ID está no formato correto para MongoDB ObjectId
+  const isMongoDB = id && /^[0-9a-fA-F]{24}$/.test(id);
+  
+  // Se for um ID MongoDB (alfanumérico de 24 caracteres), usa-o diretamente
+  // Do contrário, usa uma string vazia para evitar erros de conversão
+  const courseId = isMongoDB ? id : '';
   
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -79,11 +85,17 @@ const MatricularAlunos: React.FC = () => {
     }
   }, [dispatch, courseId]);
 
+  // Função auxiliar para comparar IDs que podem ser string ou number
+  const compareIds = (id1: any, id2: any): boolean => {
+    if (id1 === id2) return true;
+    return String(id1) === String(id2);
+  };
+
   // Filtra os alunos que ainda não estão matriculados no curso e ordena por nome
   const availableStudents = students
     .filter((student: Student) => 
       !enrollments.some((enrollment: EnrollmentFull) => 
-        enrollment.studentId === student.id && enrollment.courseId === courseId
+        enrollment.studentId === student.id && compareIds(enrollment.courseId, courseId)
       )
     )
     .sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -110,7 +122,7 @@ const MatricularAlunos: React.FC = () => {
 
     // Verificar disponibilidade de vagas
     const currentEnrollments = enrollments.filter((e: EnrollmentFull) => 
-      e.courseId === courseId && e.status === 'active'
+      compareIds(e.courseId, courseId) && e.status === 'active'
     ).length;
     
     const availableSpots = currentCourse.availableSpots || (currentCourse.totalSpots - currentEnrollments);
@@ -121,37 +133,80 @@ const MatricularAlunos: React.FC = () => {
     }
 
     try {
-      // Criar matrículas para cada aluno selecionado, usando o nome como identificador principal
-      const enrollmentPromises = selectedStudentNames.map((studentName: string) => {
-        // Encontrar o objeto do aluno correspondente ao nome
-        // Esse é o ponto-chave da mudança: buscar o aluno pelo nome em vez do ID
-        const student = students.find(s => s.fullName === studentName);
-        
+      // Importante: vamos usar diretamente os objetos de Student selecionados
+      // em vez de usar os nomes e depois tentar encontrá-los novamente
+      const enrollmentPromises = selectedStudents.map((student: Student) => {
+        // Verificar se o aluno tem um ID válido - validação reforçada
         if (!student) {
-          throw new Error(`Aluno não encontrado: ${studentName}`);
+          console.error('Objeto de aluno inválido (nulo ou undefined)');
+          throw new Error(`Objeto de aluno inválido`);
         }
         
-        const newEnrollment: Omit<EnrollmentFull, 'id'> = {
-          // Nessa implementação, ainda precisamos do ID do estudante para o backend, 
-          // mas o foco agora é encontrar o aluno pelo nome e só depois obter seu ID
-          studentId: student.id,
-          courseId: courseId,
-          studentName: student.fullName, // O nome do aluno é agora o identificador principal
+        if (student.id === undefined || student.id === null) {
+          console.error('ERRO CRÍTICO: Aluno sem ID:', student);
+          throw new Error(`Aluno sem ID: ${student?.fullName || 'desconhecido'}`);
+        }
+        
+        // Garantir que temos um ID válido e utilizável
+        const studentId = student.id; // Pode ser string ou number conforme a interface
+        
+        // Verificar explicitamente por "undefined" como string
+        if (studentId === "undefined" || String(studentId) === "undefined") {
+          console.error('ERRO CRÍTICO: ID do aluno é a string literal "undefined":', student);
+          throw new Error(`ID do aluno inválido ("undefined"): ${student.fullName}`);
+        }
+        
+        const studentIdString = String(studentId).trim();
+        if (!studentIdString || studentIdString === "undefined") {
+          console.error('ID do aluno vazio ou igual a "undefined" após conversão para string:', student);
+          throw new Error(`ID do aluno inválido ou vazio: ${student.fullName}`);
+        }
+        
+        console.log('Preparando matrícula para aluno:', studentId, 'tipo:', typeof studentId, 'nome:', student.fullName);
+        
+        // Garantir que ambos os IDs sejam válidos antes de construir o objeto de matrícula
+        if (!studentId || !courseId) {
+          console.error('IDs inválidos para matrícula:', { studentId, courseId });
+          throw new Error(`IDs inválidos para matrícula: aluno=${studentId}, curso=${courseId}`);
+        }
+        
+        // Construção segura do objeto com tipagem explícita e validação final de valores
+        // Converter para string apenas para log e validação, mas manter o tipo original no objeto
+        const studentIdForLog = String(studentId);
+        const courseIdForLog = String(courseId);
+        
+        console.log(`IDs validados para matrícula - aluno: ${studentIdForLog} (${typeof studentId}), curso: ${courseIdForLog} (${typeof courseId})`);
+        
+        // Construir com valores já validados, mantendo os tipos originais intactos
+        const newEnrollment = {
+          studentId: studentId, // Não aplicar String() aqui para preservar o tipo
+          courseId: courseId,   // Não aplicar String() aqui para preservar o tipo
+          studentName: student.fullName || 'Nome não disponível', // Garantir valor não-nulo
           enrollmentDate: moment().format('YYYY-MM-DD'),
-          status: 'active',
-          attendance: [],
-          evaluations: []
+          status: 'active' as const,
+          attendance: [] as any[],
+          evaluations: [] as any[]
         };
         
-        console.log(`Matriculando aluno ${student.fullName} no curso ${courseId}`);
+        // Verificação final para garantir que não temos a string literal "undefined" em nenhum ID
+        if (String(newEnrollment.studentId) === "undefined" || String(newEnrollment.courseId) === "undefined") {
+          console.error('ERRO FATAL: Objeto de matrícula contém "undefined" como string literal após todas as validações');
+          throw new Error('Erro crítico na validação final dos IDs de matrícula');
+        }
+        
+        // Log completo do objeto de matrícula
+        console.log('Objeto de matrícula construído:', JSON.stringify(newEnrollment));
+        
+        console.log(`Matriculando aluno ${student.fullName} (ID: ${student.id}) no curso ${courseId}`);
         return dispatch(createEnrollment(newEnrollment)).unwrap();
       });
       
       await Promise.all(enrollmentPromises);
       
       // Mostrar os nomes dos alunos matriculados na mensagem de sucesso
-      const alunosMatriculados = selectedStudentNames.join(', ');
-      setSuccessMessage(`${selectedStudentNames.length} aluno(s) matriculado(s) com sucesso: ${alunosMatriculados}`);
+      const alunosMatriculados = selectedStudents.map(student => student.fullName).join(', ');
+      setSuccessMessage(`${selectedStudents.length} aluno(s) matriculado(s) com sucesso: ${alunosMatriculados}`);
+      
       // Limpar seleções
       setSelectedStudents([]);
       setSelectedStudentNames([]);
@@ -159,9 +214,22 @@ const MatricularAlunos: React.FC = () => {
       
       // Recarregar matrículas
       dispatch(fetchEnrollmentsByCourse(courseId));
-    } catch (error) {
-      setErrorMessage('Erro ao matricular alunos. Tente novamente.');
-      console.error('Erro ao matricular alunos:', error);
+    } catch (error: any) {
+      // Extrair mensagem específica do erro para exibir ao usuário
+      let errorMsg = 'Erro ao matricular alunos.';
+      
+      // Verificar se o erro tem uma mensagem específica da API
+      if (error?.message) {
+        errorMsg += ` Detalhe: ${error.message}`;
+      }
+      
+      // Se o erro vier do rejectWithValue do thunk, ele estará em error.payload
+      if (error?.payload) {
+        errorMsg += ` Motivo: ${typeof error.payload === 'string' ? error.payload : JSON.stringify(error.payload)}`;
+      }
+      
+      setErrorMessage(errorMsg);
+      console.error('Erro detalhado ao matricular alunos:', error);
     }
   };
 
@@ -218,7 +286,7 @@ const MatricularAlunos: React.FC = () => {
                 <Typography>
                   <strong>Vagas:</strong> {currentCourse.availableSpots || (currentCourse.totalSpots - (
                     enrollments.filter((e: EnrollmentFull) => 
-                      e.courseId === courseId && e.status === 'active'
+                      compareIds(e.courseId, courseId) && e.status === 'active'
                     ).length
                   ))}/{currentCourse.totalSpots}
                 </Typography>
@@ -255,14 +323,18 @@ const MatricularAlunos: React.FC = () => {
                       option.fullName.toLowerCase().includes(inputValue)
                     );
                   }}
-                  renderOption={(props, option) => (
-                    <li {...props}>
-                      <Typography variant="body1" fontWeight="bold">{option.fullName}</Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                        ({option.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')})
-                      </Typography>
-                    </li>
-                  )}
+                  renderOption={(props, option) => {
+                    // Extrair a key do props e o resto em otherProps
+                    const { key, ...otherProps } = props;
+                    return (
+                      <li key={key} {...otherProps}>
+                        <Typography variant="body1" fontWeight="bold">{option.fullName}</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                          ({option.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')})
+                        </Typography>
+                      </li>
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -275,9 +347,10 @@ const MatricularAlunos: React.FC = () => {
                   )}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => {
-                      const tagProps = getTagProps({ index });
+                      const { key, ...tagProps } = getTagProps({ index });
                       return (
                         <Chip
+                          key={key}
                           label={option.fullName}
                           {...tagProps}
                         />
@@ -313,7 +386,7 @@ const MatricularAlunos: React.FC = () => {
         <Grid item xs={12}>
           <Paper sx={{ p: 3, mt: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Alunos Matriculados ({enrollments.filter(e => e.courseId === courseId).length})
+              Alunos Matriculados ({enrollments.filter(e => compareIds(e.courseId, courseId)).length})
             </Typography>
             <Divider sx={{ mb: 2 }} />
 
@@ -321,7 +394,7 @@ const MatricularAlunos: React.FC = () => {
               <Box display="flex" justifyContent="center" p={3}>
                 <CircularProgress size={30} />
               </Box>
-            ) : enrollments.filter(e => e.courseId === courseId).length === 0 ? (
+            ) : enrollments.filter(e => compareIds(e.courseId, courseId)).length === 0 ? (
               <Alert severity="info">Nenhum aluno matriculado neste curso.</Alert>
             ) : (
               <TableContainer sx={{ maxHeight: 400 }}>
@@ -335,7 +408,7 @@ const MatricularAlunos: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {enrollments
-                      .filter((e: EnrollmentFull) => e.courseId === courseId)
+                      .filter((e: EnrollmentFull) => compareIds(e.courseId, courseId))
                       .sort((a, b) => {
                         const nameA = a.studentName || '';
                         const nameB = b.studentName || '';

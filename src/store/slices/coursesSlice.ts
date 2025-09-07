@@ -110,7 +110,17 @@ export const fetchCourseById = createAsyncThunk(
   async (id: string | number, { rejectWithValue }) => {
     try {
       console.log(`Buscando curso com ID: ${id}, tipo: ${typeof id}`);
-      const response = await api.get(`/api/cursos/${id}`);
+      
+      // Validar se o ID está em formato válido para MongoDB ObjectId
+      const idStr = String(id);
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      
+      if (!isValidObjectId) {
+        console.error(`ID inválido para MongoDB ObjectId: ${idStr}`);
+        return rejectWithValue(`ID inválido para curso: ${idStr}. Deve ser um MongoDB ObjectId válido.`);
+      }
+      
+      const response = await api.get(`/api/cursos/${idStr}`);
       console.log('Resposta da API para busca por ID:', response.data);
       
       // Extrair o curso da estrutura da resposta

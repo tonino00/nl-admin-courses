@@ -62,7 +62,7 @@ import {
 
 // Interfaces para os dados das tabelas
 interface CourseStudentRow {
-  id: number;
+  id: string | number; // Atualizado para aceitar string ou number (MongoDB IDs)
   nome: string;
   frequencia: string;
   nota: string;
@@ -70,7 +70,7 @@ interface CourseStudentRow {
 }
 
 interface StudentCourseRow {
-  id: number;
+  id: string | number; // Atualizado para aceitar string ou number (MongoDB IDs)
   nome: string;
   frequencia: string;
   nota: string;
@@ -103,8 +103,9 @@ const RelatorioDesempenho: React.FC = () => {
   const [filterType, setFilterType] = useState<'curso' | 'aluno' | 'geral'>(
     'geral'
   );
-  const [selectedCourseId, setSelectedCourseId] = useState<number | ''>('');
-  const [selectedStudentId, setSelectedStudentId] = useState<number | ''>('');
+  // Atualizado para aceitar string | number para compatibilidade com MongoDB IDs
+  const [selectedCourseId, setSelectedCourseId] = useState<string | number | ''>('');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | number | ''>('');
   const [loading, setLoading] = useState(false);
 
   // Verificar se o rastreador global existe, criá-lo se não existir
@@ -319,7 +320,7 @@ const RelatorioDesempenho: React.FC = () => {
     });
   };
 
-  const getSpecificCourseData = (courseId: number): CourseStudentRow[] => {
+  const getSpecificCourseData = (courseId: string | number): CourseStudentRow[] => {
     if (!courseId || !enrollments) return [];
 
     const courseEnrollments = enrollments.filter(
@@ -339,7 +340,7 @@ const RelatorioDesempenho: React.FC = () => {
     });
   };
 
-  const getSpecificStudentData = (studentId: number): StudentCourseRow[] => {
+  const getSpecificStudentData = (studentId: string | number): StudentCourseRow[] => {
     if (!studentId || !enrollments) return [];
 
     const studentEnrollments = enrollments.filter(
