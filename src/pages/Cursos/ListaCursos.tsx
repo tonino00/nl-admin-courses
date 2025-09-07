@@ -47,9 +47,56 @@ const ListaCursos: React.FC = () => {
   const [courseToEnroll, setCourseToEnroll] = useState<number | null>(null);
   const [studentId, setStudentId] = useState('');
 
+  // Verificar se o rastreador global existe, criá-lo se não existir
   useEffect(() => {
-    dispatch(fetchCourses());
-  }, [dispatch]);
+    if (!(window as any).__API_CALLS_TRACKER) {
+      (window as any).__API_CALLS_TRACKER = {
+        apiCallTimestamps: {},
+        loadedData: {
+          students: false,
+          teachers: false,
+          courses: false,
+          enrollments: false
+        }
+      };
+    }
+  }, []);
+  
+  // Função para verificar se é seguro chamar a API
+  const canCallApi = (endpoint: string): boolean => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return true;
+    
+    const now = Date.now();
+    const lastCall = tracker.apiCallTimestamps[endpoint];
+    
+    // Se não houver registro ou se passou tempo suficiente desde a última chamada
+    if (!lastCall || now - lastCall > 10000) { // 10 segundos entre chamadas
+      tracker.apiCallTimestamps[endpoint] = now;
+      return true;
+    }
+    
+    console.log(`Evitando chamada duplicada para ${endpoint}. Última chamada há ${(now - lastCall)/1000}s.`);
+    return false;
+  };
+  
+  useEffect(() => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return;
+    
+    // Se já temos dados, marcar como carregado
+    if (courses.length > 0) {
+      tracker.loadedData.courses = true;
+      return;
+    }
+    
+    // Só buscar se os dados ainda não foram carregados e se não houver chamada recente
+    if (!tracker.loadedData.courses && !loading && canCallApi('/api/cursos')) {
+      console.log('Carregando cursos pela primeira vez');
+      dispatch(fetchCourses());
+      tracker.loadedData.courses = true;
+    }
+  }, [dispatch, courses.length, loading]);
 
   const handleDelete = (id: number) => {
     setCourseToDelete(id);

@@ -112,8 +112,8 @@ const DetalhesAluno: React.FC = () => {
   };
   
   const handleUnenroll = () => {
-    if (selectedEnrollment) {
-      dispatch(deleteEnrollment(selectedEnrollment) as any)
+    if (selectedEnrollment && id) {
+      dispatch(deleteEnrollment({id: selectedEnrollment, studentId: Number(id)}) as any)
         .unwrap()
         .then(() => {
           // Atualizar lista de matrículas após desmatrícula bem-sucedida

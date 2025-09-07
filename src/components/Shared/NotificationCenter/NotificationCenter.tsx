@@ -36,7 +36,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userType }) => 
   );
 
   useEffect(() => {
-    dispatch(fetchNotifications(userType));
+    // Somente busca notificações se não for um usuário convidado
+    if (userType !== 'guest') {
+      dispatch(fetchNotifications(userType));
+    }
   }, [dispatch, userType]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -108,7 +111,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userType }) => 
         </Box>
         <Divider />
         <Box sx={{ p: 2 }}>
-          {loading ? (
+          {userType === 'guest' ? (
+            <Typography color="textSecondary" sx={{ textAlign: 'center', py: 3 }}>
+              Faça login para ver notificações
+            </Typography>
+          ) : loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
               <CircularProgress size={30} />
             </Box>

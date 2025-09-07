@@ -51,6 +51,8 @@ export interface TimeClockRecord {
 export interface Teacher extends Person {
   bio: string;
   education: string;
+  fullName:string;
+  phone:string;
   specializations: string[];
   courses: number[];
   type: 'volunteer' | 'employee'; // Tipo do professor: voluntário ou funcionário

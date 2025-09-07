@@ -619,7 +619,7 @@ const FormProfessor: React.FC = () => {
                   name="status"
                   control={control}
                   render={({ field }: { field: any }) => (
-                    <FormControl fullWidth error={!!errors.status}>
+                    <FormControl fullWidth error={Boolean(errors.status)}>
                       <InputLabel>Status</InputLabel>
                       <Select {...field} label="Status">
                         <MenuItem value="active">Ativo</MenuItem>
@@ -635,7 +635,7 @@ const FormProfessor: React.FC = () => {
                   name="type"
                   control={control}
                   render={({ field }: { field: any }) => (
-                    <FormControl fullWidth error={!!errors.type} required>
+                    <FormControl fullWidth error={Boolean(errors.type)} required>
                       <InputLabel>Tipo</InputLabel>
                       <Select {...field} label="Tipo">
                         <MenuItem value="volunteer">Voluntário</MenuItem>

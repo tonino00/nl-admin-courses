@@ -66,13 +66,113 @@ const Dashboard: React.FC = () => {
     loadDashboard();
   }, [user]);
   
-  // Também carregamos os dados básicos para uso geral
+  // Inicializar o rastreador de chamadas globalmente se não existir
+  React.useEffect(() => {
+    if (!(window as any).__API_CALLS_TRACKER) {
+      (window as any).__API_CALLS_TRACKER = {
+        apiCallTimestamps: {},
+        loadedData: {
+          students: false,
+          teachers: false,
+          courses: false,
+          enrollments: false
+        }
+      };
+    }
+  }, []);
+  
+  // Referência ao rastreador global de chamadas à API
+  const apiCallsTrackerRef = React.useRef<{
+    apiCallTimestamps: Record<string, number>;
+    loadedData: {
+      students: boolean;
+      teachers: boolean;
+      courses: boolean;
+      enrollments: boolean;
+    };
+  }>((window as any).__API_CALLS_TRACKER || {
+    apiCallTimestamps: {},
+    loadedData: {
+      students: false,
+      teachers: false,
+      courses: false,
+      enrollments: false
+    }
+  });
+
+  // Função para verificar se é seguro chamar a API
+  const canCallApi = (endpoint: string): boolean => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return true;
+    
+    const now = Date.now();
+    const lastCall = tracker.apiCallTimestamps[endpoint];
+    
+    // Se não houver registro ou se passou tempo suficiente desde a última chamada
+    if (!lastCall || now - lastCall > 10000) { // 10 segundos entre chamadas
+      tracker.apiCallTimestamps[endpoint] = now;
+      return true;
+    }
+    
+    console.log(`Evitando chamada duplicada para ${endpoint}. Última chamada há ${(now - lastCall)/1000}s.`);
+    return false;
+  };
+
+  // Carregamos os dados básicos para uso geral apenas uma vez
+  // Efeito para carregar dados iniciais - executado uma vez na montagem
   useEffect(() => {
-    dispatch(fetchStudents());
-    dispatch(fetchTeachers());
-    dispatch(fetchCourses());
-    dispatch(fetchEnrollments());
-  }, [dispatch]);
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return;
+
+    // Verificar se já temos dados carregados no Redux
+    if (students.length > 0) tracker.loadedData.students = true;
+    if (teachers.length > 0) tracker.loadedData.teachers = true;
+    if (courses.length > 0) tracker.loadedData.courses = true;
+    if (enrollments.length > 0) tracker.loadedData.enrollments = true;
+
+    // Função para carregar dados se necessário
+    const fetchDataIfNeeded = async () => {
+      // Alunos
+      if (students.length === 0 && !studentsLoading && 
+          !tracker.loadedData.students && 
+          canCallApi('/api/alunos')) {
+        console.log('Carregando alunos pela primeira vez');
+        dispatch(fetchStudents());
+        tracker.loadedData.students = true;
+      }
+      
+      // Professores
+      if (teachers.length === 0 && !teachersLoading && 
+          !tracker.loadedData.teachers && 
+          canCallApi('/api/professores')) {
+        console.log('Carregando professores pela primeira vez');
+        dispatch(fetchTeachers());
+        tracker.loadedData.teachers = true;
+      }
+      
+      // Cursos
+      if (courses.length === 0 && !coursesLoading && 
+          !tracker.loadedData.courses && 
+          canCallApi('/api/cursos')) {
+        console.log('Carregando cursos pela primeira vez');
+        dispatch(fetchCourses());
+        tracker.loadedData.courses = true;
+      }
+      
+      // Matrículas
+      if (enrollments.length === 0 && !enrollmentsLoading && 
+          !tracker.loadedData.enrollments && 
+          canCallApi('/api/matriculas')) {
+        console.log('Carregando matrículas pela primeira vez');
+        dispatch(fetchEnrollments());
+        tracker.loadedData.enrollments = true;
+      }
+    };
+
+    fetchDataIfNeeded();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]); // Apenas dispatch como dependência para executar somente uma vez
+
 
   // Manipular mudança de tabs
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {

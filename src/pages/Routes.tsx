@@ -52,35 +52,70 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+// Componente para gerenciar a rota de login
+const LoginRoute: React.FC = () => {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  
+  // Se estiver autenticado, redireciona para o dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // Caso contrário, mostra o componente de login
+  return (
+    <LazyComponent>
+      <Login />
+    </LazyComponent>
+  );
+};
+
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, loading, token } = useSelector((state: RootState) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [isPending, startTransition] = useTransition();
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Verificar status de autenticação ao iniciar o componente
+  // Verificar status de autenticação ao iniciar o componente, mas apenas se ainda não tivermos confirmado a autenticação
   useEffect(() => {
+    // Se já estiver autenticado e tiver token, não precisa verificar novamente
+    if (isAuthenticated && token) {
+      setAuthChecked(true);
+      return;
+    }
+    
+    // Se já verificamos, não precisamos verificar novamente
+    if (authChecked) return;
+    
     const verifyAuth = async () => {
       try {
+        console.log('Verificando autenticação...');
         // Verifica autenticação de forma assíncrona
         await dispatch(checkAuthStatus()).unwrap();
+        setAuthChecked(true);
       } catch (error) {
         // Já tratamos o erro no reducer
         console.log('Erro de autenticação:', error);
+        setAuthChecked(true);
       }
     };
     
     verifyAuth();
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated, token, authChecked]);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      // Usando startTransition para envolver a navegação que pode acionar lazy loading
+    if (!loading && authChecked && !isAuthenticated) {
+      // Só redireciona se já verificamos a autenticação e não está autenticado
+      console.log('Não autenticado, redirecionando para login');
+      // Usando startTransition para evitar redirecionamentos em cascata
       startTransition(() => {
-        navigate('/login');
+        // Verificando se já não estamos na página de login para evitar loops
+        if (window.location.pathname !== '/login') {
+          navigate('/login');
+        }
       });
     }
-  }, [isAuthenticated, loading, navigate, startTransition]);
+  }, [isAuthenticated, loading, navigate, startTransition, authChecked]);
 
   if (loading || isPending) {
     // Mostra o componente de loading tanto para carregamento da autenticação quanto para transições pendentes
@@ -98,7 +133,10 @@ const Routes = () => {
   return (
     <RouterRoutes>
       {/* Rotas públicas de autenticação */}
-      <Route path="/login" element={<LazyComponent><Login /></LazyComponent>} />
+      <Route 
+        path="/login" 
+        element={<LoginRoute />} 
+      />
       <Route path="/register" element={<LazyComponent><Register /></LazyComponent>} />
       <Route path="/reset-password" element={<LazyComponent><RequestReset /></LazyComponent>} />
       <Route path="/reset-password/:token" element={<LazyComponent><ConfirmReset /></LazyComponent>} />

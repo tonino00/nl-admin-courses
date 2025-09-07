@@ -417,21 +417,25 @@ const CalendarEventForm: React.FC<Props> = ({ event, onClose }) => {
                   render={({ field }) => (
                     <Autocomplete
                       multiple
-                      options={students}
-                      getOptionLabel={(option) => option.fullName || `Aluno ${option.id}`}
-                      value={students.filter(student => field.value.includes(Number(student.id)))}
+                      options={Array.isArray(students) ? students : []}
+                      getOptionLabel={(option) => option && typeof option === 'object' ? (option.fullName || `Aluno ${option.id || '?'}`) : ''}
+                      value={Array.isArray(students) ? students.filter(student => field.value && Array.isArray(field.value) && field.value.includes(Number(student.id))) : []}
                       onChange={(_, newValue) => {
                         field.onChange(newValue.map(student => Number(student.id)));
                       }}
-                      renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                          <Chip
-                            label={option.fullName || `Aluno ${option.id}`}
-                            {...getTagProps({ index })}
-                            key={option.id}
-                          />
-                        ))
-                      }
+                      renderTags={(value, getTagProps) => {
+                        if (!Array.isArray(value)) return null;
+                        return value.map((option, index) => {
+                          if (!option || typeof option !== 'object') return null;
+                          return (
+                            <Chip
+                              label={option.fullName || `Aluno ${option.id || '?'}`}
+                              {...getTagProps({ index })}
+                              key={option.id || index}
+                            />
+                          );
+                        }).filter(Boolean); // Remove null values
+                      }}
                       renderInput={(params) => (
                         <TextField
                           {...params}

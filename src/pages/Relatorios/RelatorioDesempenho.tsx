@@ -107,15 +107,104 @@ const RelatorioDesempenho: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
 
+  // Verificar se o rastreador global existe, criá-lo se não existir
   useEffect(() => {
+    if (!(window as any).__API_CALLS_TRACKER) {
+      (window as any).__API_CALLS_TRACKER = {
+        apiCallTimestamps: {},
+        loadedData: {
+          students: false,
+          teachers: false,
+          courses: false,
+          enrollments: false,
+          calendar: false,
+          reports: false
+        }
+      };
+    }
+  }, []);
+  
+  // Função para verificar se é seguro chamar a API
+  const canCallApi = (endpoint: string): boolean => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return true;
+    
+    const now = Date.now();
+    const lastCall = tracker.apiCallTimestamps[endpoint];
+    
+    // Se não houver registro ou se passou tempo suficiente desde a última chamada
+    if (!lastCall || now - lastCall > 10000) { // 10 segundos entre chamadas
+      tracker.apiCallTimestamps[endpoint] = now;
+      return true;
+    }
+    
+    console.log(`Evitando chamada duplicada para ${endpoint}. Última chamada há ${(now - lastCall)/1000}s.`);
+    return false;
+  };
+  
+  // Carregar dados necessários para o relatório
+  useEffect(() => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) {
+      setLoading(true);
+      Promise.all([
+        dispatch(fetchStudents()),
+        dispatch(fetchCourses()),
+        dispatch(fetchEnrollments()),
+        dispatch(fetchTeachers()),
+      ]).then(() => setLoading(false));
+      return;
+    }
+    
     setLoading(true);
-    Promise.all([
-      dispatch(fetchStudents()),
-      dispatch(fetchCourses()),
-      dispatch(fetchEnrollments()),
-      dispatch(fetchTeachers()),
-    ]).then(() => setLoading(false));
-  }, [dispatch]);
+    const promises = [];
+    
+    // Verificar se já temos dados carregados no Redux ou se precisamos carregar
+    if (students.length === 0 && !loadingStudents && !tracker.loadedData.students) {
+      if (canCallApi('/api/alunos')) {
+        console.log('Carregando alunos para relatórios');
+        promises.push(dispatch(fetchStudents()));
+        tracker.loadedData.students = true;
+      }
+    } else if (students.length > 0) {
+      tracker.loadedData.students = true;
+    }
+    
+    if (courses.length === 0 && !loadingCourses && !tracker.loadedData.courses) {
+      if (canCallApi('/api/cursos')) {
+        console.log('Carregando cursos para relatórios');
+        promises.push(dispatch(fetchCourses()));
+        tracker.loadedData.courses = true;
+      }
+    } else if (courses.length > 0) {
+      tracker.loadedData.courses = true;
+    }
+    
+    if (teachers.length === 0 && !tracker.loadedData.teachers) {
+      if (canCallApi('/api/professores')) {
+        console.log('Carregando professores para relatórios');
+        promises.push(dispatch(fetchTeachers()));
+        tracker.loadedData.teachers = true;
+      }
+    } else if (teachers.length > 0) {
+      tracker.loadedData.teachers = true;
+    }
+    
+    if (enrollments.length === 0 && !loadingEnrollments) {
+      if (canCallApi('/api/matriculas')) {
+        console.log('Carregando matrículas para relatórios');
+        promises.push(dispatch(fetchEnrollments()));
+      }
+    }
+    
+    if (promises.length > 0) {
+      Promise.all(promises).then(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+    
+  }, [dispatch, students.length, courses.length, teachers.length, enrollments.length,
+      loadingStudents, loadingCourses, loadingEnrollments]);
 
   const handleFilterTypeChange = (event: SelectChangeEvent) => {
     setFilterType(event.target.value as 'curso' | 'aluno' | 'geral');

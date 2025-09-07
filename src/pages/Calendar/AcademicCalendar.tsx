@@ -158,22 +158,71 @@ const AcademicCalendar: React.FC = () => {
     }
   };
 
+  // Verificar se o rastreador global existe, criá-lo se não existir
+  useEffect(() => {
+    if (!(window as any).__API_CALLS_TRACKER) {
+      (window as any).__API_CALLS_TRACKER = {
+        apiCallTimestamps: {},
+        loadedData: {
+          students: false,
+          teachers: false,
+          courses: false,
+          enrollments: false,
+          calendar: false
+        }
+      };
+    }
+  }, []);
+  
+  // Função para verificar se é seguro chamar a API
+  const canCallApi = (endpoint: string): boolean => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return true;
+    
+    const now = Date.now();
+    const lastCall = tracker.apiCallTimestamps[endpoint];
+    
+    // Se não houver registro ou se passou tempo suficiente desde a última chamada
+    if (!lastCall || now - lastCall > 10000) { // 10 segundos entre chamadas
+      tracker.apiCallTimestamps[endpoint] = now;
+      return true;
+    }
+    
+    console.log(`Evitando chamada duplicada para ${endpoint}. Última chamada há ${(now - lastCall)/1000}s.`);
+    return false;
+  };
+  
   // Carregar eventos ao inicializar
   useEffect(() => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return;
+    
+    // Se já temos eventos no store, marcar como carregado
+    if (Array.isArray(events) && events.length > 0) {
+      tracker.loadedData.calendar = true;
+      return;
+    }
+    
     let userType = 'admin';
     if (user) {
       if (user.role === 'teacher') userType = 'teacher';
       else if (user.role === 'student') userType = 'student';
     }
-    dispatch(fetchCalendarEvents({ userType }));
-  }, [dispatch, user]);
+    
+    // Só buscar se os dados ainda não foram carregados e se não houver chamada recente
+    if (!tracker.loadedData.calendar && !isLoading && canCallApi('/api/calendario')) {
+      console.log('Carregando eventos de calendário pela primeira vez');
+      dispatch(fetchCalendarEvents({ userType }));
+      tracker.loadedData.calendar = true;
+    }
+  }, [dispatch, user, events, isLoading]);
 
   // Função para filtrar eventos com base nos filtros ativos
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = Array.isArray(events) ? events.filter((event) => {
     const typeMatch = activeFilters.types.length === 0 || activeFilters.types.includes(event.type);
     const courseMatch = activeFilters.courses.length === 0 || (event.courseId && activeFilters.courses.includes(event.courseId));
     return typeMatch && courseMatch;
-  });
+  }) : [];
 
   // Handler para selecionar um evento
   const handleSelectEvent = (event: any) => {

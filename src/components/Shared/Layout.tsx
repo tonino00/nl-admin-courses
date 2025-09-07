@@ -51,14 +51,8 @@ const Layout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  useEffect(() => {
-    if (!user) {
-      // Usar startTransition para evitar suspensão durante navegação
-      startTransition(() => {
-        navigate('/login');
-      });
-    }
-  }, [user, navigate, startTransition]);
+  // Removemos o redirecionamento dentro do Layout para evitar loops
+  // O redirecionamento agora é gerenciado apenas pelo ProtectedRoute
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -171,64 +165,62 @@ const Layout: React.FC = () => {
               Sistema de Gestão Acadêmica
             </Typography>
           </Box>
-          {user && (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {/* Centro de Notificações */}
-              <NotificationCenter userType={user.role || 'admin'} />
-              
-              {/* Botão de alternância de tema */}
-              <ThemeToggleButton />
-              
-              <Tooltip title="Configurações do perfil">
-                <IconButton
-                  size="large"
-                  edge="end"
-                  aria-label="account of current user"
-                  aria-haspopup="true"
-                  onClick={handleProfileMenuOpen}
-                  color="inherit"
-                >
-                  <Avatar
-                    sx={{
-                      bgcolor: theme.palette.secondary.main,
-                      width: 32,
-                      height: 32,
-                    }}
-                  >
-                    {user?.name ? user.name.charAt(0) : '?'}
-                  </Avatar>
-                </IconButton>
-              </Tooltip>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleProfileMenuClose}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {/* Centro de Notificações */}
+            <NotificationCenter userType={user?.role || 'guest'} />
+            
+            {/* Botão de alternância de tema */}
+            <ThemeToggleButton />
+            
+            <Tooltip title="Configurações do perfil">
+              <IconButton
+                size="large"
+                edge="end"
+                aria-label="account of current user"
+                aria-haspopup="true"
+                onClick={handleProfileMenuOpen}
+                color="inherit"
               >
-                <MenuItem onClick={handleProfileMenuClose}>
-                  <ListItemIcon>
-                    <PersonIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Perfil</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <ListItemIcon>
-                    <LogoutIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Sair</ListItemText>
-                </MenuItem>
-              </Menu>
-            </Box>
-          )}
+                <Avatar
+                  sx={{
+                    bgcolor: theme.palette.secondary.main,
+                    width: 32,
+                    height: 32,
+                  }}
+                >
+                  {user?.name ? user.name.charAt(0) : '?'}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorEl)}
+              onClose={handleProfileMenuClose}
+            >
+              <MenuItem onClick={handleProfileMenuClose}>
+                <ListItemIcon>
+                  <PersonIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Perfil</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Sair</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
         </Toolbar>
       </AppBar>
       <Box

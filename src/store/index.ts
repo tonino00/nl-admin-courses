@@ -1,4 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { apiCallsMiddleware } from './middleware/apiCallsMiddleware';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
@@ -53,7 +54,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // necessário para permitir que o redux-persist funcione
-    }),
+    }).concat(apiCallsMiddleware),
 });
 
 export const persistor = persistStore(store);

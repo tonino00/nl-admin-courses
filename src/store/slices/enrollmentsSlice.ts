@@ -14,8 +14,25 @@ export const fetchEnrollments = createAsyncThunk(
   'enrollments/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/enrollments');
-      return response.data;
+      // Busca todos os alunos para extrair as informações de matrículas
+      const response = await api.get('/api/alunos');
+      
+      // Extrai todas as matrículas de todos os alunos
+      const enrollments: EnrollmentFull[] = [];
+      response.data.forEach((student: any) => {
+        if (student.enrollments && student.enrollments.length > 0) {
+          student.enrollments.forEach((enrollment: any) => {
+            // Adiciona as informações do aluno às matrículas
+            enrollments.push({
+              ...enrollment,
+              studentId: student.id,
+              studentName: student.fullName
+            });
+          });
+        }
+      });
+      
+      return enrollments;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -29,8 +46,24 @@ export const fetchEnrollmentsByStudent = createAsyncThunk(
   'enrollments/fetchByStudent',
   async (studentId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/enrollments?studentId=${studentId}`);
-      return response.data;
+      // Busca diretamente o aluno específico
+      const response = await api.get(`/api/alunos/${studentId}`);
+      const student = response.data;
+      
+      // Extrai as matrículas do aluno
+      const enrollments: EnrollmentFull[] = [];
+      if (student.enrollments && student.enrollments.length > 0) {
+        student.enrollments.forEach((enrollment: any) => {
+          // Adiciona as informações do aluno às matrículas
+          enrollments.push({
+            ...enrollment,
+            studentId: student.id,
+            studentName: student.fullName
+          });
+        });
+      }
+      
+      return enrollments;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -44,8 +77,29 @@ export const fetchEnrollmentsByCourse = createAsyncThunk(
   'enrollments/fetchByCourse',
   async (courseId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/enrollments?courseId=${courseId}`);
-      return response.data;
+      // Busca todos os alunos para encontrar as matrículas do curso específico
+      const response = await api.get('/api/alunos');
+      const students = response.data;
+      
+      // Filtra as matrículas pelo courseId
+      const enrollments: EnrollmentFull[] = [];
+      students.forEach((student: any) => {
+        if (student.enrollments && student.enrollments.length > 0) {
+          const courseEnrollments = student.enrollments.filter(
+            (enrollment: any) => enrollment.courseId === courseId
+          );
+          
+          courseEnrollments.forEach((enrollment: any) => {
+            enrollments.push({
+              ...enrollment,
+              studentId: student.id,
+              studentName: student.fullName
+            });
+          });
+        }
+      });
+      
+      return enrollments;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -59,8 +113,31 @@ export const createEnrollment = createAsyncThunk(
   'enrollments/create',
   async (enrollment: Omit<EnrollmentFull, 'id'>, { rejectWithValue }) => {
     try {
-      const response = await api.post('/enrollments', enrollment);
-      return response.data;
+      // Primeiro buscamos o aluno
+      const studentResponse = await api.get(`/api/alunos/${enrollment.studentId}`);
+      const student = studentResponse.data;
+      
+      // Adicionamos a matrícula à lista de matrículas do aluno
+      if (!student.enrollments) {
+        student.enrollments = [];
+      }
+      
+      // Geramos um ID único para a matrícula (pode ser necessário ajustar dependendo de como seu backend gera IDs)
+      const newEnrollment = {
+        ...enrollment,
+        id: Date.now() // Isso é uma simplificação, idealmente o backend cuidaria disso
+      };
+      
+      student.enrollments.push(newEnrollment);
+      
+      // Atualizamos o aluno com a nova matrícula
+      const updateResponse = await api.put(`/api/alunos/${enrollment.studentId}`, student);
+      
+      // Retornamos a matrícula criada com dados completos
+      return {
+        ...newEnrollment,
+        studentName: student.fullName
+      };
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -74,8 +151,29 @@ export const updateEnrollment = createAsyncThunk(
   'enrollments/update',
   async (enrollment: EnrollmentFull, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/enrollments/${enrollment.id}`, enrollment);
-      return response.data;
+      // Primeiro buscamos o aluno
+      const studentResponse = await api.get(`/api/alunos/${enrollment.studentId}`);
+      const student = studentResponse.data;
+      
+      // Encontramos e atualizamos a matrícula específica no array de matrículas do aluno
+      if (student.enrollments) {
+        const enrollmentIndex = student.enrollments.findIndex(
+          (e: any) => e.id === enrollment.id
+        );
+        
+        if (enrollmentIndex !== -1) {
+          // Remover propriedades que são apenas para o frontend
+          const { studentName, ...enrollmentData } = enrollment;
+          
+          student.enrollments[enrollmentIndex] = enrollmentData;
+          
+          // Atualizamos o aluno com a matrícula atualizada
+          await api.put(`/api/alunos/${enrollment.studentId}`, student);
+        }
+      }
+      
+      // Retornamos a matrícula atualizada
+      return enrollment;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -87,9 +185,22 @@ export const updateEnrollment = createAsyncThunk(
 
 export const deleteEnrollment = createAsyncThunk(
   'enrollments/delete',
-  async (id: number, { rejectWithValue }) => {
+  async ({id, studentId}: {id: number, studentId: number}, { rejectWithValue }) => {
     try {
-      await api.delete(`/enrollments/${id}`);
+      // Primeiro buscamos o aluno
+      const studentResponse = await api.get(`/api/alunos/${studentId}`);
+      const student = studentResponse.data;
+      
+      // Removemos a matrícula do array de matrículas do aluno
+      if (student.enrollments) {
+        student.enrollments = student.enrollments.filter(
+          (enrollment: any) => enrollment.id !== id
+        );
+        
+        // Atualizamos o aluno sem a matrícula removida
+        await api.put(`/api/alunos/${studentId}`, student);
+      }
+      
       return id;
     } catch (error) {
       if (error instanceof Error) {
@@ -106,27 +217,43 @@ export const updateAttendance = createAsyncThunk(
   async (
     {
       enrollmentId,
+      studentId,
       attendanceData,
     }: {
       enrollmentId: number;
+      studentId: number;
       attendanceData: { date: string; present: boolean }[];
     },
-    { rejectWithValue, getState }
+    { rejectWithValue }
   ) => {
     try {
-      // First, get current enrollment data
-      const response = await api.get(`/enrollments/${enrollmentId}`);
-      const enrollment = response.data;
-
-      // Update the attendance
-      const updatedEnrollment = {
-        ...enrollment,
-        attendance: attendanceData,
-      };
-
-      // Save the updated enrollment
-      const updateResponse = await api.put(`/enrollments/${enrollmentId}`, updatedEnrollment);
-      return updateResponse.data;
+      // Primeiro buscamos o aluno
+      const studentResponse = await api.get(`/api/alunos/${studentId}`);
+      const student = studentResponse.data;
+      
+      // Encontramos a matrícula específica
+      if (student.enrollments) {
+        const enrollmentIndex = student.enrollments.findIndex(
+          (e: any) => e.id === enrollmentId
+        );
+        
+        if (enrollmentIndex !== -1) {
+          // Atualizamos os dados de presença
+          student.enrollments[enrollmentIndex].attendance = attendanceData;
+          
+          // Atualizamos o aluno com a matrícula atualizada
+          await api.put(`/api/alunos/${studentId}`, student);
+          
+          // Retornamos a matrícula atualizada
+          return {
+            ...student.enrollments[enrollmentIndex],
+            studentId,
+            studentName: student.fullName
+          };
+        }
+      }
+      
+      throw new Error('Matrícula não encontrada');
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);

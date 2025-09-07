@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -24,7 +24,9 @@ import { LoginCredentials } from '../../types';
 const Login: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { error, loading } = useAppSelector((state: RootState) => state.auth);
+  const { error, loading, isAuthenticated } = useAppSelector((state: RootState) => state.auth);
+  
+  // Removendo o redirecionamento automático que estava causando loops
   
   const [credentials, setCredentials] = useState<LoginCredentials>({
     username: '',
@@ -43,9 +45,20 @@ const Login: React.FC = () => {
     e.preventDefault();
     
     try {
+      // Adicionar logs para debug
+      console.log('Iniciando processo de login');
+      
       const resultAction = await dispatch(loginUser(credentials));
+      console.log('Resultado da ação de login:', resultAction);
+      
       if (loginUser.fulfilled.match(resultAction)) {
-        navigate('/dashboard');
+        console.log('Login bem-sucedido, redirecionando para /');
+        
+        // Usar timeout para garantir que o estado seja atualizado antes do redirecionamento
+        setTimeout(() => {
+          console.log('Executando redirecionamento após timeout');
+          navigate('/');
+        }, 500);
       }
     } catch (error) {
       console.error('Falha na autenticação:', error);

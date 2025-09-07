@@ -41,10 +41,15 @@ const ListaAlunos: React.FC = () => {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<number | null>(null);
+  const [apiCalled, setApiCalled] = useState(false);
   
   useEffect(() => {
-    dispatch(fetchStudents());
-  }, [dispatch]);
+    // Evita chamar a API se já tiver dados carregados ou se já chamou antes
+    if (students.length === 0 && !apiCalled) {
+      dispatch(fetchStudents());
+      setApiCalled(true);
+    }
+  }, [dispatch, students.length, apiCalled]);
   
   useEffect(() => {
     if (searchTerm) {
@@ -190,7 +195,7 @@ const ListaAlunos: React.FC = () => {
             </Box>
           ) : (
             <DataGrid
-              rows={filteredStudents}
+              rows={Array.isArray(filteredStudents) ? filteredStudents : []}
               columns={columns}
               initialState={{
                 pagination: {

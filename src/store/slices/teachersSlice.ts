@@ -15,9 +15,29 @@ export const fetchTeachers = createAsyncThunk(
   'teachers/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
+      // Adicionar logs para debug da API
+      console.log('Fetching teachers from API...');
       const response = await api.get('/api/professores');
-      return response.data;
+      console.log('Teachers API response:', response.data);
+      
+      // Acessar o caminho correto na estrutura da resposta
+      const teachersData = response.data?.data?.teachers || [];
+      console.log('Teachers data from nested structure:', teachersData);
+      
+      // Garantir que seja um array
+      const teachersArray = Array.isArray(teachersData) ? teachersData : [];
+      
+      // Mapear os dados para garantir compatibilidade com o DataGrid
+      // Principalmente transformando _id para id
+      const teachers = teachersArray.map(teacher => ({
+        ...teacher,
+        id: teacher._id || `temp-${Math.random()}`  // Usar _id como id ou gerar um temporário
+      }));
+      
+      console.log('Transformed teachers with id field:', teachers);
+      return teachers;
     } catch (error) {
+      console.error('Error fetching teachers:', error);
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }
@@ -31,7 +51,11 @@ export const fetchTeacherById = createAsyncThunk(
   async (id: number, { rejectWithValue }) => {
     try {
       const response = await api.get(`/api/professores/${id}`);
-      return response.data;
+      console.log('Teacher by ID response:', response.data);
+      
+      // Acessar o caminho correto na estrutura da resposta
+      const teacherData = response.data?.data?.professor || null;
+      return teacherData;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -46,7 +70,11 @@ export const createTeacher = createAsyncThunk(
   async (teacher: Omit<Teacher, 'id'>, { rejectWithValue }) => {
     try {
       const response = await api.post('/api/professores', teacher);
-      return response.data;
+      console.log('Create teacher response:', response.data);
+      
+      // Acessar o caminho correto na estrutura da resposta
+      const createdTeacher = response.data?.data?.professor || null;
+      return createdTeacher;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -61,7 +89,11 @@ export const updateTeacher = createAsyncThunk(
   async (teacher: Teacher, { rejectWithValue }) => {
     try {
       const response = await api.put(`/api/professores/${teacher.id}`, teacher);
-      return response.data;
+      console.log('Update teacher response:', response.data);
+      
+      // Acessar o caminho correto na estrutura da resposta
+      const updatedTeacher = response.data?.data?.professor || null;
+      return updatedTeacher;
     } catch (error) {
       if (error instanceof Error) {
         return rejectWithValue(error.message);
@@ -135,7 +167,12 @@ const teachersSlice = createSlice({
       })
       .addCase(createTeacher.fulfilled, (state, action: PayloadAction<Teacher>) => {
         state.loading = false;
-        state.teachers.push(action.payload);
+        // Verificar se state.teachers é um array antes de usar push
+        if (Array.isArray(state.teachers)) {
+          state.teachers.push(action.payload);
+        } else {
+          state.teachers = [action.payload];
+        }
         state.currentTeacher = action.payload;
       })
       .addCase(createTeacher.rejected, (state, action) => {

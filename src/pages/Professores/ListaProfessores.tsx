@@ -137,16 +137,67 @@ const ListaProfessores: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<number | null>(null);
   
+  // Verificar se o rastreador global existe, criá-lo se não existir
   useEffect(() => {
-    dispatch(fetchTeachers());
-  }, [dispatch]);
+    if (!(window as any).__API_CALLS_TRACKER) {
+      (window as any).__API_CALLS_TRACKER = {
+        apiCallTimestamps: {},
+        loadedData: {
+          students: false,
+          teachers: false,
+          courses: false,
+          enrollments: false
+        }
+      };
+    }
+  }, []);
+  
+  // Função para verificar se é seguro chamar a API
+  const canCallApi = (endpoint: string): boolean => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return true;
+    
+    const now = Date.now();
+    const lastCall = tracker.apiCallTimestamps[endpoint];
+    
+    // Se não houver registro ou se passou tempo suficiente desde a última chamada
+    if (!lastCall || now - lastCall > 10000) { // 10 segundos entre chamadas
+      tracker.apiCallTimestamps[endpoint] = now;
+      return true;
+    }
+    
+    console.log(`Evitando chamada duplicada para ${endpoint}. Última chamada há ${(now - lastCall)/1000}s.`);
+    return false;
+  };
+  
+  // UseEffect para buscar os dados apenas uma vez
+  useEffect(() => {
+    const tracker = (window as any).__API_CALLS_TRACKER;
+    if (!tracker) return;
+    
+    // Se já temos dados, marcar como carregado
+    if (teachers.length > 0) {
+      tracker.loadedData.teachers = true;
+      return;
+    }
+    
+    // Só buscar se os dados ainda não foram carregados e se não houver chamada recente
+    if (!tracker.loadedData.teachers && !loading && canCallApi('/api/professores')) {
+      console.log('Carregando professores pela primeira vez');
+      dispatch(fetchTeachers());
+      tracker.loadedData.teachers = true;
+    }
+  }, [dispatch, teachers.length, loading]);
   
   // Memoizar a lógica de filtragem para melhor desempenho
   useEffect(() => {
-    // Usar uma função memoizada para filtragem
+    // Garantir que teachers seja sempre um array antes de usar filter
+    const teachersArray = Array.isArray(teachers) ? teachers : [];
+    
+    // Função para filtragem
     const filterTeachers = () => {
       if (searchTerm) {
-        return teachers.filter(
+        return teachersArray.filter(
           (teacher: Teacher) =>
             teacher.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             teacher.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,7 +207,7 @@ const ListaProfessores: React.FC = () => {
               ))
         );
       } else {
-        return teachers;
+        return teachersArray;
       }
     };
     
@@ -275,7 +326,7 @@ const ListaProfessores: React.FC = () => {
             </Box>
           ) : (
             <DataGrid
-              rows={filteredTeachers}
+              rows={Array.isArray(filteredTeachers) ? filteredTeachers : []}
               columns={columns}
               initialState={{
                 pagination: {
