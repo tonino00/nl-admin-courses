@@ -15,6 +15,7 @@ import {
   TextField,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import {
@@ -300,8 +301,35 @@ const ListaCursos: React.FC = () => {
             height: { xs: 350, sm: 400 },
             width: '100%',
             overflowX: 'auto',
+            position: 'relative',
           }}
         >
+          {/* Overlay de carregamento personalizado */}
+          {loading && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                zIndex: 2,
+                borderRadius: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <CircularProgress size={40} thickness={4} />
+                <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
+                  Carregando cursos...
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
           <DataGrid
             rows={courses}
             columns={columns}
@@ -328,7 +356,7 @@ const ListaCursos: React.FC = () => {
             pageSizeOptions={[5, 10, 25]}
             checkboxSelection={!isMobile}
             disableRowSelectionOnClick
-            loading={loading}
+            loading={false} // Desativamos o indicador padrão do DataGrid porque criamos nosso próprio overlay
             sx={{
               '& .MuiDataGrid-cell': {
                 padding: { xs: '8px 4px', sm: '16px 8px' },
