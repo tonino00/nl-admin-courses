@@ -57,6 +57,7 @@ export interface Teacher extends Person {
   courses: number[];
   type: 'volunteer' | 'employee'; // Tipo do professor: voluntário ou funcionário
   timeClockRecords?: TimeClockRecord[];
+  _id?: string; // Campo _id do MongoDB
 }
 
 // Course Type

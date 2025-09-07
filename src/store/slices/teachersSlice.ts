@@ -20,21 +20,49 @@ export const fetchTeachers = createAsyncThunk(
       const response = await api.get('/api/professores');
       console.log('Teachers API response:', response.data);
       
-      // Acessar o caminho correto na estrutura da resposta
-      const teachersData = response.data?.data?.teachers || [];
-      console.log('Teachers data from nested structure:', teachersData);
+      // Log da estrutura completa da resposta para diagnóstico
+      console.log('API Response structure:', JSON.stringify(response.data, null, 2));
       
-      // Garantir que seja um array
-      const teachersArray = Array.isArray(teachersData) ? teachersData : [];
+      // Extrair professores de forma flexível para lidar com diferentes estruturas de resposta
+      let teachersData = [];
       
-      // Mapear os dados para garantir compatibilidade com o DataGrid
+      // Cenario 1: {status, data: {teachers: [...]}}
+      if (response.data?.data?.teachers && Array.isArray(response.data.data.teachers)) {
+        console.log('Encontrados professores na estrutura data.teachers');
+        teachersData = response.data.data.teachers;
+      } 
+      // Cenario 2: {status, data: [...]}
+      else if (Array.isArray(response.data?.data)) {
+        console.log('Encontrados professores na estrutura data array');
+        teachersData = response.data.data;
+      }
+      // Cenario 3: {teachers: [...]}
+      else if (Array.isArray(response.data?.teachers)) {
+        console.log('Encontrados professores na estrutura teachers');
+        teachersData = response.data.teachers;
+      }
+      // Cenario 4: [...]
+      else if (Array.isArray(response.data)) {
+        console.log('Encontrados professores como array direto');
+        teachersData = response.data;
+      }
+      // Cenario 5: Falha em todos os anteriores
+      else {
+        console.warn('Estrutura de resposta não reconhecida:', response.data);
+        teachersData = [];
+      }
+      
+      console.log('Professores extraídos antes da transformação:', teachersData);
+      console.log('Quantidade de professores encontrados:', teachersData.length);
+      
+      // Mapear os dados para garantir compatibilidade
       // Principalmente transformando _id para id
-      const teachers = teachersArray.map(teacher => ({
+      const teachers = teachersData.map((teacher: any) => ({
         ...teacher,
-        id: teacher._id || `temp-${Math.random()}`  // Usar _id como id ou gerar um temporário
+        id: teacher._id || teacher.id || `temp-${Math.random()}`  // Usar _id como id ou manter id existente
       }));
       
-      console.log('Transformed teachers with id field:', teachers);
+      console.log('Professores transformados com campo id:', teachers);
       return teachers;
     } catch (error) {
       console.error('Error fetching teachers:', error);

@@ -156,18 +156,103 @@ const DetalhesCurso: React.FC = () => {
     return <Alert severity="warning">Curso não encontrado</Alert>;
   }
 
-  // Função auxiliar para comparar IDs (string ou number)
-  const compareIds = (id1: any, id2: any): boolean => {
-    // Se ambos são iguais diretamente (mesmo tipo e valor)
-    if (id1 === id2) return true;
-    // Converter para string e comparar
-    return String(id1) === String(id2);
+  // Inspeção detalhada da resposta da API para diagnóstico
+  console.log('-------------------------');
+  console.log('DIAGNÓSTICO DE PROFESSOR:');
+  console.log('ID do professor no curso:', currentCourse.teacherId, 'Tipo:', typeof currentCourse.teacherId);
+  console.log('Lista bruta de professores:', teachers);
+  console.log('Quantidade de professores disponíveis:', teachers?.length || 0);
+  
+  if (Array.isArray(teachers) && teachers.length > 0) {
+    teachers.forEach((teacher, index) => {
+      console.log(`Professor ${index}: id=${teacher.id}, _id=${teacher._id}, nome=${teacher.fullName}`);
+    });
+  }
+  console.log('-------------------------');
+
+  // Função auxiliar aprimorada para comparar IDs (considerando estrutura MongoDB)
+  const compareIds = (teacherId: any, courseTeacherId: any): boolean => {
+    console.log(`Comparando: teacherId=${teacherId}, courseTeacherId=${courseTeacherId}`);
+    
+    // Se algum é nulo ou undefined, não há match
+    if (teacherId == null || courseTeacherId == null) return false;
+    
+    // Se são idênticos
+    if (teacherId === courseTeacherId) {
+      console.log('Match exato!');
+      return true;
+    }
+    
+    // Comparar como strings
+    const strMatch = String(teacherId).trim() === String(courseTeacherId).trim();
+    if (strMatch) {
+      console.log('Match por string!');
+      return true;
+    }
+    
+    // Se o id do professor é um objeto com propriedade _id ou id
+    if (typeof teacherId === 'object' && teacherId !== null) {
+      const objId = teacherId._id || teacherId.id;
+      if (objId === courseTeacherId || String(objId) === String(courseTeacherId)) {
+        console.log('Match por objeto id!'); 
+        return true;
+      }
+    }
+    
+    return false;
   };
   
-  // Encontrar o professor do curso usando comparação segura de IDs
-  const courseTeacher = teachers.find(
-    (teacher: Teacher) => compareIds(teacher.id, currentCourse.teacherId)
+  // Verificar e ajustar o teacherId se necessário
+  // O MongoDB geralmente usa _id em vez de id
+  let teacherId = currentCourse.teacherId;
+  console.log('TeacherId original do curso:', teacherId);
+  
+  // Se o curso tem um campo _id em teacherId (objeto MongoDB)
+  if (typeof currentCourse.teacherId === 'object' && currentCourse.teacherId !== null) {
+    if (currentCourse.teacherId._id) {
+      teacherId = currentCourse.teacherId._id;
+      console.log('Extraindo _id do objeto teacherId:', teacherId);
+    }
+  } 
+  // Se teacherId é um objeto (caso extremo)
+  else if (currentCourse.teacherId && typeof currentCourse.teacherId === 'object') {
+    teacherId = String(currentCourse.teacherId);
+    console.log('TeacherId é um objeto, convertendo para string:', teacherId);
+  }
+  
+  console.log('TeacherId ajustado para busca:', teacherId);
+  
+  // Tentativa 1: Busca normal por ID
+  let courseTeacher = teachers.find(
+    (teacher: Teacher) => compareIds(teacher.id, teacherId)
   );
+  
+  // Tentativa 2: Se não encontrado, tenta com _id
+  if (!courseTeacher) {
+    console.log('Professor não encontrado na primeira tentativa, buscando por _id');
+    courseTeacher = teachers.find(
+      (teacher: Teacher) => {
+        if (teacher._id) {
+          return compareIds(teacher._id, teacherId);
+        }
+        return false;
+      }
+    );
+  }
+  
+  // Tentativa 3: Comparação direta de strings
+  if (!courseTeacher) {
+    console.log('Professor não encontrado nas tentativas anteriores, comparando strings');
+    const teacherIdStr = String(teacherId).trim();
+    courseTeacher = teachers.find(
+      (teacher: Teacher) => {
+        return String(teacher.id).trim() === teacherIdStr || 
+               (teacher._id && String(teacher._id).trim() === teacherIdStr);
+      }
+    );
+  }
+  
+  console.log('Professor encontrado após todas as tentativas:', courseTeacher);
 
   // Encontra os cursos de pré-requisito usando comparação segura de IDs
   const prerequisiteCourses =
@@ -228,30 +313,19 @@ const DetalhesCurso: React.FC = () => {
 
           {/* Reorganiza os botões para dispositivos móveis e tablets */}
           {isMobile ? (
-            <Stack direction="column" spacing={1} width="100%">
-              <Box display="flex" justifyContent="space-between" width="100%">
+            <Stack direction="column" spacing={2} width="100%">
+              {/* Primeira linha: Voltar e Editar */}
+              <Box display="flex" gap={2} width="100%">
                 <Button
                   variant="outlined"
                   startIcon={<ArrowBackIcon />}
                   component={Link}
                   to="/cursos"
                   size="small"
-                  sx={{ flex: 1, mr: 1 }}
+                  sx={{ flex: 1 }}
                 >
                   Voltar
                 </Button>
-                <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={handleDelete}
-                  size="small"
-                  sx={{ flex: 1 }}
-                >
-                  Excluir
-                </Button>
-              </Box>
-              <Box display="flex" justifyContent="space-between" width="100%">
                 <Button
                   variant="contained"
                   color="secondary"
@@ -259,21 +333,14 @@ const DetalhesCurso: React.FC = () => {
                   component={Link}
                   to={`/cursos/editar/${id}`}
                   size="small"
-                  sx={{ flex: 1, mr: 1 }}
+                  sx={{ flex: 1 }}
                 >
                   Editar
                 </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<AssignmentIcon />}
-                  component={Link}
-                  to={`/cursos/${id}/frequencia-avaliacao`}
-                  size="small"
-                  sx={{ flex: 1, mr: 1 }}
-                >
-                  Freq/Avaliação
-                </Button>
+              </Box>
+              
+              {/* Segunda linha: Matricular e Freq/Aval */}
+              <Box display="flex" gap={2} width="100%">
                 <Button
                   variant="contained"
                   color="success"
@@ -283,23 +350,107 @@ const DetalhesCurso: React.FC = () => {
                   size="small"
                   sx={{ flex: 1 }}
                 >
-                  Matricular Alunos
+                  Matricular
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AssignmentIcon />}
+                  component={Link}
+                  to={`/cursos/${id}/frequencia-avaliacao`}
+                  size="small"
+                  sx={{ flex: 1 }}
+                >
+                  Freq/Aval
                 </Button>
               </Box>
+              
+              {/* Terceira linha: Botão de Excluir */}
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleDelete}
+                size="small"
+              >
+                Excluir
+              </Button>
             </Stack>
           ) : isTablet ? (
             <Stack
-              direction="row"
               spacing={1}
-              flexWrap="wrap"
-              justifyContent="flex-end"
+              width="100%"
             >
+              <Box display="flex" gap={1}>
+                <Button
+                  variant="outlined"
+                  startIcon={<ArrowBackIcon />}
+                  component={Link}
+                  to="/cursos"
+                  size="small"
+                  sx={{ flexGrow: 1, fontSize: "0.85rem", py: 0.5 }}
+                >
+                  Voltar
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<EditIcon />}
+                  component={Link}
+                  to={`/cursos/editar/${id}`}
+                  size="small"
+                  sx={{ flexGrow: 1, fontSize: "0.85rem", py: 0.5 }}
+                >
+                  Editar
+                </Button>
+              </Box>
+              
+              <Box display="flex" gap={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AssignmentIcon />}
+                  component={Link}
+                  to={`/cursos/${id}/frequencia-avaliacao`}
+                  size="small"
+                  sx={{ flexGrow: 1, fontSize: "0.85rem", py: 0.5 }}
+                >
+                  Freq/Aval
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<PersonAddIcon />}
+                  component={Link}
+                  to={`/cursos/${id}/matricular-alunos`}
+                  size="small"
+                  sx={{ flexGrow: 1, fontSize: "0.85rem", py: 0.5 }}
+                >
+                  Matricular
+                </Button>
+              </Box>
+
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleDelete}
+                size="small"
+                sx={{ fontSize: "0.85rem", py: 0.5, mt: 1 }}
+                fullWidth
+              >
+                Excluir
+              </Button>
+            </Stack>
+          ) : (
+            <Box display="flex" gap={1} sx={{ flexWrap: "wrap" }}>
               <Button
                 variant="outlined"
                 startIcon={<ArrowBackIcon />}
                 component={Link}
                 to="/cursos"
-                size="medium"
+                size="small"
+                sx={{ fontSize: "0.85rem" }}
               >
                 Voltar
               </Button>
@@ -309,18 +460,10 @@ const DetalhesCurso: React.FC = () => {
                 startIcon={<EditIcon />}
                 component={Link}
                 to={`/cursos/editar/${id}`}
+                size="small"
+                sx={{ fontSize: "0.85rem" }}
               >
                 Editar
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AssignmentIcon />}
-                component={Link}
-                to={`/cursos/${id}/frequencia-avaliacao`}
-                sx={{ mr: 1 }}
-              >
-                Freq/Avaliação
               </Button>
               <Button
                 variant="contained"
@@ -328,42 +471,10 @@ const DetalhesCurso: React.FC = () => {
                 startIcon={<PersonAddIcon />}
                 component={Link}
                 to={`/cursos/${id}/matricular-alunos`}
+                size="small"
+                sx={{ fontSize: "0.85rem" }}
               >
-                Matricular Alunos
-              </Button>
-
-              <Box mt={2}>
-                <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={handleDelete}
-                  fullWidth
-                >
-                  Excluir
-                </Button>
-              </Box>
-            </Stack>
-          ) : (
-            <Box>
-              <Button
-                variant="outlined"
-                startIcon={<ArrowBackIcon />}
-                component={Link}
-                to="/cursos"
-                sx={{ mr: 1 }}
-              >
-                Voltar
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                startIcon={<EditIcon />}
-                component={Link}
-                to={`/cursos/editar/${id}`}
-                sx={{ mr: 1 }}
-              >
-                Editar
+                Matricular
               </Button>
               <Button
                 variant="contained"
@@ -371,15 +482,18 @@ const DetalhesCurso: React.FC = () => {
                 startIcon={<AssignmentIcon />}
                 component={Link}
                 to={`/cursos/${id}/frequencia-avaliacao`}
-                sx={{ mr: 1 }}
+                size="small"
+                sx={{ fontSize: "0.85rem" }}
               >
-                Frequência e Avaliação
+                Frequência
               </Button>
               <Button
                 variant="contained"
                 color="error"
                 startIcon={<DeleteIcon />}
                 onClick={handleDelete}
+                size="small"
+                sx={{ fontSize: "0.85rem" }}
               >
                 Excluir
               </Button>
@@ -499,28 +613,41 @@ const DetalhesCurso: React.FC = () => {
                 <CardContent>
                   {courseTeacher ? (
                     <>
-                      <Typography variant="h6">{courseTeacher.name}</Typography>
-                      <Typography variant="body1">
-                        {courseTeacher.email}
+                      <Typography variant="h6">
+                        {typeof courseTeacher === 'object' && courseTeacher !== null
+                          ? courseTeacher.fullName || 'Nome não disponível'
+                          : 'Informações não disponíveis'}
                       </Typography>
-                      <Typography variant="body1">
-                        {courseTeacher.phone}
-                      </Typography>
-                      <Box mt={2}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          Especializações:
+                      
+                      {courseTeacher.email && (
+                        <Typography variant="body1" sx={{ mt: 1 }}>
+                          <strong>Email:</strong> {courseTeacher.email}
                         </Typography>
-                        <Box>
-                          {courseTeacher.specialization?.map((spec: string) => (
-                            <Chip
-                              key={spec}
-                              label={spec}
-                              size="small"
-                              sx={{ mr: 0.5, mt: 0.5 }}
-                            />
-                          ))}
+                      )}
+                      
+                      {courseTeacher.phone && (
+                        <Typography variant="body1" sx={{ mt: 0.5 }}>
+                          <strong>Telefone:</strong> {courseTeacher.phone}
+                        </Typography>
+                      )}
+                      
+                      {courseTeacher.specializations && courseTeacher.specializations.length > 0 && (
+                        <Box mt={2}>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            Especializações:
+                          </Typography>
+                          <Box>
+                            {courseTeacher.specializations.map((spec: string) => (
+                              <Chip
+                                key={spec}
+                                label={spec}
+                                size="small"
+                                sx={{ mr: 0.5, mt: 0.5 }}
+                              />
+                            ))}
+                          </Box>
                         </Box>
-                      </Box>
+                      )}
                     </>
                   ) : (
                     <Typography variant="body1">
